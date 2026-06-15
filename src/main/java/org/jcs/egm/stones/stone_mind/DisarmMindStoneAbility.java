@@ -10,7 +10,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneAbilityCooldowns;
+import org.jcs.egm.stones.StoneEnergyManager;
 
 import java.util.List;
 
@@ -21,9 +21,6 @@ public class DisarmMindStoneAbility implements IGStoneAbility {
 
     @Override
     public void activate(Level level, Player player, ItemStack stack) {
-        var cdItem = StoneAbilityCooldowns.pickCooldownItem(player, stack);
-        if (StoneAbilityCooldowns.isCooling(player, cdItem)) return;
-
         if (!(level instanceof ServerLevel server) || !(player instanceof ServerPlayer serverPlayer)) return;
 
         AABB area = player.getBoundingBox().inflate(10.0);
@@ -58,7 +55,7 @@ public class DisarmMindStoneAbility implements IGStoneAbility {
         }
 
         if (didAnything) {
-            StoneAbilityCooldowns.apply(player, cdItem, "mind", abilityKey());
+            StoneEnergyManager.consumeInstant(player, stack, "mind", abilityKey());
         }
     }
 

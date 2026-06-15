@@ -4,7 +4,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -17,12 +16,10 @@ import org.jcs.egm.network.NetworkHandler;
 import org.jcs.egm.network.OpenGauntletMenuPacket;
 import org.jcs.egm.network.OpenStoneHolderMenuPacket;
 import org.jcs.egm.registry.ModItems;
-import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.StoneItem;
 import org.jcs.egm.registry.ModEffects;
 import org.jcs.egm.stones.StoneAbilityRegistries;
 import org.jcs.egm.stones.stone_power.EmpoweredPunchPowerStoneAbility;
-import org.jcs.egm.stones.stone_power.PowerStoneItem;
 
 @Mod.EventBusSubscriber(modid = "egm", bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class ClientModEvents {
@@ -62,15 +59,23 @@ public class ClientModEvents {
             if (mc.player != null) {
                 ItemStack stack = mc.player.getMainHandItem();
                 if (stack.getItem() instanceof StoneItem stoneItem) {
-                    StoneItem.openStoneAbilityMenu(stack, InteractionHand.MAIN_HAND, stoneItem.getKey());
+                    openStoneAbilityMenu(stack, InteractionHand.MAIN_HAND, stoneItem.getKey());
                 } else if (stack.getItem() instanceof StoneHolderItem holder) {
-                    StoneItem.openStoneAbilityMenu(stack, InteractionHand.MAIN_HAND, holder.getStoneKey());
+                    openStoneAbilityMenu(stack, InteractionHand.MAIN_HAND, holder.getStoneKey());
                 } else if (stack.getItem() instanceof InfinityGauntletItem) {
                     String stoneKey = InfinityGauntletItem.getSelectedStoneName(stack);
-                    StoneItem.openStoneAbilityMenu(stack, InteractionHand.MAIN_HAND, stoneKey);
+                    openStoneAbilityMenu(stack, InteractionHand.MAIN_HAND, stoneKey);
                 }
             }
         }
+    }
+
+    private static void openStoneAbilityMenu(ItemStack stack, InteractionHand hand, String stoneKey) {
+        Minecraft mc = Minecraft.getInstance();
+        var names = StoneAbilityRegistries.getAbilityNames(stoneKey);
+        if (names.isEmpty()) return;
+        int idx = stack.hasTag() ? stack.getTag().getInt("AbilityIndex") : 0;
+        mc.setScreen(new StoneAbilityMenuScreen(stack, hand, names, idx));
     }
 }
 

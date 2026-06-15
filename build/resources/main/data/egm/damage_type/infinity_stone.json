@@ -1,6 +1,0 @@
-{
-  "exhaustion": 0.1,
-  "message_id": "infinity_stone",
-  "scaling": "never",
-  "effects": ["magic", "bypass_armor", "no_aggro"]
-}

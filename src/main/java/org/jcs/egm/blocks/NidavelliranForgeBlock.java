@@ -51,6 +51,7 @@ public class NidavelliranForgeBlock extends BaseEntityBlock {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return SHAPE;
     }
@@ -61,6 +62,7 @@ public class NidavelliranForgeBlock extends BaseEntityBlock {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         if (!level.isClientSide()) {
             BlockEntity entity = level.getBlockEntity(pos);
@@ -75,6 +77,7 @@ public class NidavelliranForgeBlock extends BaseEntityBlock {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (state.getBlock() != newState.getBlock()) {
             BlockEntity blockEntity = level.getBlockEntity(pos);

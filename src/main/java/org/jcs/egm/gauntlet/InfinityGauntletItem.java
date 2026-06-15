@@ -16,9 +16,9 @@ import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.items.ItemStackHandler;
 import org.jcs.egm.registry.ModItems;
-import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneAbilityRegistries;
-import org.jcs.egm.stones.StoneAbilityCooldowns;
+import org.jcs.egm.stones.StoneAbilityContext;
+import org.jcs.egm.stones.StoneAbilityUse;
+import org.jcs.egm.stones.StoneEnergyManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
@@ -33,6 +33,7 @@ public class InfinityGauntletItem extends Item {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public @NotNull Multimap<Attribute, AttributeModifier> getDefaultAttributeModifiers(EquipmentSlot slot) {
         ImmutableMultimap.Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
         if (slot == EquipmentSlot.MAINHAND) {
@@ -53,27 +54,12 @@ public class InfinityGauntletItem extends Item {
         }
         ItemStack stoneStack = handler.getStackInSlot(idx);
         if (!stoneStack.isEmpty()) {
-            IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(stoneKey, stoneStack);
-            if (ability == null) return InteractionResultHolder.pass(stack);
-
-            // Universal guard: blocks if on cooldown (container-independent) and re-syncs overlay to gauntlet.
-            if (StoneAbilityCooldowns.guardUse(player, stoneStack, stoneKey, ability)) {
-                return InteractionResultHolder.pass(stack);
-            }
-
-            if (ability.canHoldUse()) {
-                player.startUsingItem(hand);
-                return InteractionResultHolder.consume(stack);
-            } else if (!level.isClientSide) {
-                ability.activate(level, player, stoneStack);
-                // Apply container-aware cooldown + player gate using the STONE stack
-                StoneAbilityCooldowns.apply(player, stoneStack, stoneKey, ability);
-                // Make sure the stone NBT is put back (if mutated) and bitmask is updated
+            StoneAbilityContext context = StoneAbilityUse.context(level, player, hand, stoneKey, stoneStack, stack);
+            return StoneAbilityUse.use(context, stack, () -> {
                 handler.setStackInSlot(idx, stoneStack);
                 stack.getTag().put("Stones", handler.serializeNBT());
                 updateStonesBitmaskNBT(stack);
-                return InteractionResultHolder.success(stack);
-            }
+            });
         }
         return InteractionResultHolder.pass(stack);
     }
@@ -93,12 +79,9 @@ public class InfinityGauntletItem extends Item {
             ItemStack stoneStack = handler.getStackInSlot(idx);
             if (!stoneStack.isEmpty()) {
                 String stoneKey = getSelectedStoneName(stack);
-                IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(stoneKey, stoneStack);
-                if (ability != null && ability.canHoldUse()) {
-                    ability.onUsingTick(level, player, stoneStack, count);
-                    handler.setStackInSlot(idx, stoneStack);
-                    stack.getTag().put("Stones", handler.serializeNBT());
-                }
+                StoneAbilityUse.onUseTick(level, player, stoneStack, stoneKey, count);
+                handler.setStackInSlot(idx, stoneStack);
+                stack.getTag().put("Stones", handler.serializeNBT());
             }
         }
     }
@@ -118,21 +101,16 @@ public class InfinityGauntletItem extends Item {
             ItemStack stoneStack = handler.getStackInSlot(idx);
             if (!stoneStack.isEmpty()) {
                 String stoneKey = getSelectedStoneName(stack);
-                IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(stoneKey, stoneStack);
-                if (ability != null && ability.canHoldUse()) {
-                    ability.releaseUsing(level, player, stoneStack, timeLeft);
-                    // Apply container-aware cooldown + player gate at the moment the hold ability "fires"/releases
-                    StoneAbilityCooldowns.apply(player, stoneStack, stoneKey, ability);
-                    handler.setStackInSlot(idx, stoneStack);
-                    stack.getTag().put("Stones", handler.serializeNBT());
-                    updateStonesBitmaskNBT(stack);
-                }
+                StoneAbilityUse.releaseUsing(level, player, stoneStack, stoneKey, timeLeft);
+                handler.setStackInSlot(idx, stoneStack);
+                stack.getTag().put("Stones", handler.serializeNBT());
+                updateStonesBitmaskNBT(stack);
             }
         }
     }
     // --------------------------------------------------------------------
 
-    /** Helper to set a stone into a slot and automatically transfer any remaining cooldown overlay to this gauntlet. */
+    /** Helper to set a stone into a slot and initialize/refresh gauntlet energy. */
     public static void setStoneStack(ItemStack gauntlet, int slot, ItemStack stone, Player actor) {
         ItemStackHandler handler = new ItemStackHandler(6);
         if (gauntlet.hasTag() && gauntlet.getTag().contains("Stones")) {
@@ -143,7 +121,7 @@ public class InfinityGauntletItem extends Item {
         updateStonesBitmaskNBT(gauntlet);
 
         if (actor != null) {
-            StoneAbilityCooldowns.transferOnInsert(actor, gauntlet);
+            StoneEnergyManager.refreshOnInsert(actor, gauntlet);
         }
     }
 

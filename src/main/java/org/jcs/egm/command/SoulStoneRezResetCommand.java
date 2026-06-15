@@ -11,12 +11,12 @@ import org.jcs.egm.stones.stone_soul.SoulStoneItem;
 public class SoulStoneRezResetCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
-                Commands.literal("soul_stone_rez_cooldown_reset")
+                Commands.literal("soul_stone_rez_energy_refill")
                         .requires(source -> source.hasPermission(2)) // OP-only
                         .executes(ctx -> {
                             ServerPlayer player = ctx.getSource().getPlayerOrException();
-                            SoulStoneItem.resetCooldown(player.getUUID());
-                            player.sendSystemMessage(Component.literal("Soul Stone resurrection cooldown reset")
+                            SoulStoneItem.refillResurrectionEnergy(player.getUUID());
+                            player.sendSystemMessage(Component.literal("Soul Stone resurrection energy refilled")
                                     .withStyle(Style.EMPTY.withItalic(true)));
                             return 1;
                         })

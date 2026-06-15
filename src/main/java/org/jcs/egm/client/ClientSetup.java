@@ -64,7 +64,7 @@ public class ClientSetup {
             // Infinity Gauntlet and Holder: stone_bitmask predicate (uses StoneBitmask NBT)
             ItemProperties.register(
                     ModItems.INFINITY_GAUNTLET.get(),
-                    new ResourceLocation(egm.MODID, "stone_bitmask"),
+                    ResourceLocation.fromNamespaceAndPath(egm.MODID, "stone_bitmask"),
                     (stack, world, entity, seed) -> {
                         if (stack.hasTag() && stack.getTag().contains("StoneBitmask")) {
                             return stack.getTag().getInt("StoneBitmask");
@@ -74,7 +74,7 @@ public class ClientSetup {
             );
             ItemProperties.register(
                     ModItems.MIND_STONE_HOLDER.get(),
-                    new ResourceLocation(egm.MODID, "stone_bitmask"),
+                    ResourceLocation.fromNamespaceAndPath(egm.MODID, "stone_bitmask"),
                     (stack, world, entity, seed) -> {
                         if (stack.hasTag() && stack.getTag().contains("StoneBitmask")) {
                             return stack.getTag().getInt("StoneBitmask");
@@ -84,7 +84,7 @@ public class ClientSetup {
             );
             ItemProperties.register(
                     ModItems.POWER_STONE_HOLDER.get(),
-                    new ResourceLocation(egm.MODID, "stone_bitmask"),
+                    ResourceLocation.fromNamespaceAndPath(egm.MODID, "stone_bitmask"),
                     (stack, world, entity, seed) -> {
                         if (stack.hasTag() && stack.getTag().contains("StoneBitmask")) {
                             return stack.getTag().getInt("StoneBitmask");
@@ -94,7 +94,7 @@ public class ClientSetup {
             );
             ItemProperties.register(
                     ModItems.SPACE_STONE_HOLDER.get(),
-                    new ResourceLocation(egm.MODID, "stone_bitmask"),
+                    ResourceLocation.fromNamespaceAndPath(egm.MODID, "stone_bitmask"),
                     (stack, world, entity, seed) -> {
                         if (stack.hasTag() && stack.getTag().contains("StoneBitmask")) {
                             return stack.getTag().getInt("StoneBitmask");
@@ -104,7 +104,7 @@ public class ClientSetup {
             );
             ItemProperties.register(
                     ModItems.REALITY_STONE_HOLDER.get(),
-                    new ResourceLocation(egm.MODID, "stone_bitmask"),
+                    ResourceLocation.fromNamespaceAndPath(egm.MODID, "stone_bitmask"),
                     (stack, world, entity, seed) -> {
                         if (stack.hasTag() && stack.getTag().contains("StoneBitmask")) {
                             return stack.getTag().getInt("StoneBitmask");
@@ -114,7 +114,7 @@ public class ClientSetup {
             );
             ItemProperties.register(
                     ModItems.SOUL_STONE_HOLDER.get(),
-                    new ResourceLocation(egm.MODID, "stone_bitmask"),
+                    ResourceLocation.fromNamespaceAndPath(egm.MODID, "stone_bitmask"),
                     (stack, world, entity, seed) -> {
                         if (stack.hasTag() && stack.getTag().contains("StoneBitmask")) {
                             return stack.getTag().getInt("StoneBitmask");
@@ -124,7 +124,7 @@ public class ClientSetup {
             );
             ItemProperties.register(
                     ModItems.TIME_STONE_HOLDER.get(),
-                    new ResourceLocation(egm.MODID, "stone_bitmask"),
+                    ResourceLocation.fromNamespaceAndPath(egm.MODID, "stone_bitmask"),
                     (stack, world, entity, seed) -> {
                         if (stack.hasTag() && stack.getTag().contains("StoneBitmask")) {
                             return stack.getTag().getInt("StoneBitmask");

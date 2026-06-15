@@ -1,6 +1,5 @@
 package org.jcs.egm.stones.stone_soul;
 
-import net.minecraft.network.chat.Component;
 import org.jcs.egm.stones.IGStoneAbility;
 
 import java.util.ArrayList;
@@ -18,13 +17,6 @@ public class SoulStoneAbilityRegistry {
 
     public static List<IGStoneAbility> getAbilities() {
         return ABILITIES;
-    }
-
-    public static List<Component> getAbilityNames() {
-        List<Component> names = new ArrayList<>();
-        names.add(Component.literal("Banish Soul"));
-        names.add(Component.literal("Life Drain"));
-        return names;
     }
 
     public static IGStoneAbility getSelectedAbility(net.minecraft.world.item.ItemStack stack) {

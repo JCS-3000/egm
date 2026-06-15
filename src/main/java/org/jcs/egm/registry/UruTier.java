@@ -12,6 +12,7 @@ public class UruTier {
         @Override
         public float getAttackDamageBonus() { return 10.0f; }
         @Override
+        @SuppressWarnings("deprecation")
         public int getLevel() { return 4; } // Netherite level
         @Override
         public int getEnchantmentValue() { return 30; }

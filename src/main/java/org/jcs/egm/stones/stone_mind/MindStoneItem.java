@@ -1,9 +1,6 @@
 package org.jcs.egm.stones.stone_mind;
 
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.EnchantedBookItem;
 import net.minecraft.world.item.ItemStack;
@@ -18,9 +15,6 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jcs.egm.registry.ModItems;
-import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneAbilityRegistries;
-import org.jcs.egm.stones.StoneAbilityCooldowns;
 import org.jcs.egm.stones.StoneItem;
 
 import java.util.HashMap;
@@ -28,7 +22,6 @@ import java.util.Map;
 
 /**
  * Mind Stone:
- * - Active ability flow uses guard + container-aware cooldowns.
  * - Passive XP boost removed.
  * - NEW: Anvil catalyst — put enchanted item/book in LEFT, Mind Stone in RIGHT.
  *   For a flat cost of 30 levels, upgrades all *existing* enchants on the left item to their max level.
@@ -42,45 +35,6 @@ public class MindStoneItem extends StoneItem {
 
     @Override public String getKey()   { return "mind"; }
     @Override public int    getColor() { return 0xFFD700; }
-
-    // ===== Active ability dispatch (sanitized) ============================================
-
-    @Override
-    protected InteractionResultHolder<ItemStack> handleStoneUse(Level world, Player player, InteractionHand hand, ItemStack stack, StoneState state) {
-        IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(getKey(), stack);
-        if (ability == null) return InteractionResultHolder.pass(stack);
-
-        if (StoneAbilityCooldowns.guardUse(player, stack, getKey(), ability)) return InteractionResultHolder.pass(stack);
-
-        if (ability.canHoldUse()) {
-            player.startUsingItem(hand);
-            return InteractionResultHolder.consume(stack);
-        }
-
-        if (!world.isClientSide) {
-            ability.activate(world, player, stack);
-            StoneAbilityCooldowns.apply(player, stack, getKey(), ability);
-            return InteractionResultHolder.success(stack);
-        }
-        return InteractionResultHolder.pass(stack);
-    }
-
-    @Override
-    public void onUseTick(Level world, LivingEntity entity, ItemStack stack, int count) {
-        if (!(entity instanceof Player player)) return;
-        IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(getKey(), stack);
-        if (ability != null && ability.canHoldUse()) ability.onUsingTick(world, player, stack, count);
-    }
-
-    @Override
-    public void releaseUsing(ItemStack stack, Level world, LivingEntity entity, int timeLeft) {
-        if (!(entity instanceof Player player)) return;
-        IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(getKey(), stack);
-        if (ability != null && ability.canHoldUse()) {
-            ability.releaseUsing(world, player, stack, timeLeft);
-            if (!world.isClientSide) StoneAbilityCooldowns.apply(player, stack, getKey(), ability);
-        }
-    }
 
     // ===== Anvil catalyst: “Max out current enchants for 30 levels” =======================
 
@@ -106,7 +60,7 @@ public class MindStoneItem extends StoneItem {
                     var tag = list.getCompound(i);
                     String idStr = tag.getString("id");
                     int lvl = tag.getShort("lvl");
-                    Enchantment ench = ForgeRegistries.ENCHANTMENTS.getValue(new ResourceLocation(idStr));
+                    Enchantment ench = ForgeRegistries.ENCHANTMENTS.getValue(ResourceLocation.parse(idStr));
                     if (ench == null) continue;
                     int max = ench.getMaxLevel();
                     if (max < 1) continue;

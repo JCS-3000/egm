@@ -25,7 +25,7 @@ import java.util.concurrent.ThreadLocalRandom;
 @Mod.EventBusSubscriber(value = Dist.CLIENT, modid = "egm", bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class WristRingRenderer {
 
-    private static final ResourceLocation TEX_WHITE = new ResourceLocation("egm", "textures/misc/white.png");
+    private static final ResourceLocation TEX_WHITE = ResourceLocation.fromNamespaceAndPath("egm", "textures/misc/white.png");
 
     // ===== Placement near the wrist =====
     private static final float SIDE_OFFSET     = 0.28f; // toward main hand from chest

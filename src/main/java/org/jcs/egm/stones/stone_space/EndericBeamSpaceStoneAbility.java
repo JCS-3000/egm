@@ -19,7 +19,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneAbilityCooldowns;
+import org.jcs.egm.stones.StoneEnergyManager;
 import org.jcs.egm.network.NetworkHandler;
 import org.jcs.egm.registry.ModParticles;
 
@@ -28,7 +28,7 @@ import java.util.List;
 public class EndericBeamSpaceStoneAbility implements IGStoneAbility {
 
     private static final SoundEvent SPACE_TELEPORT_SOUND = 
-            SoundEvent.createVariableRangeEvent(new ResourceLocation("egm", "space_teleport_effect"));
+            SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("egm", "space_teleport_effect"));
 
     @Override
     public String abilityKey() { return "enderic_beam"; }
@@ -36,6 +36,7 @@ public class EndericBeamSpaceStoneAbility implements IGStoneAbility {
     @Override
     public void activate(Level level, Player player, ItemStack stack) {
         if (level.isClientSide) return;
+        if (!StoneEnergyManager.consumeInstant(player, stack, "space", this)) return;
 
         double range = 64.0; // Increased range for more dramatic effect
         Vec3 eye = player.getEyePosition();
@@ -174,9 +175,6 @@ public class EndericBeamSpaceStoneAbility implements IGStoneAbility {
                 level.playSound(null, player.blockPosition(), SoundEvents.ENDERMAN_SCREAM, SoundSource.PLAYERS, 0.5F, 1.5F);
             }
         }
-
-        // IMPORTANT: apply container-aware cooldown + player-persistent gate using the STONE stack
-        StoneAbilityCooldowns.apply(player, stack, "space", this);
     }
 
     @Override
@@ -211,6 +209,7 @@ public class EndericBeamSpaceStoneAbility implements IGStoneAbility {
     /**
      * Checks if a location is safe for teleportation
      */
+    @SuppressWarnings("deprecation")
     private boolean isSafeLocation(Level level, Vec3 pos) {
         BlockPos blockPos = BlockPos.containing(pos);
         BlockPos above = blockPos.above();

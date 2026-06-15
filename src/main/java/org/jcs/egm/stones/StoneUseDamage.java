@@ -11,7 +11,7 @@ import net.minecraft.world.level.Level;
 
 public class StoneUseDamage {
     public static final ResourceKey<DamageType> INFINITY_STONE_KEY =
-            ResourceKey.create(Registries.DAMAGE_TYPE, new ResourceLocation("egm", "infinity_stone"));
+            ResourceKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath("egm", "infinity_stone"));
 
     public static DamageSource get(Level level, LivingEntity entity) {
         Holder<DamageType> type = level.registryAccess()

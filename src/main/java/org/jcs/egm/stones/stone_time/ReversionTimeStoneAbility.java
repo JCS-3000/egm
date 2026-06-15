@@ -21,14 +21,15 @@ import net.minecraft.world.level.Level;
 import org.jcs.egm.network.NetworkHandler;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneAbilityCooldowns;
+import org.jcs.egm.stones.StoneAbilityStateCleanup;
+import org.jcs.egm.stones.StoneEnergyManager;
 
 import net.minecraft.world.entity.Entity.RemovalReason;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.*;
 
-public class ReversionTimeStoneAbility implements IGStoneAbility {
+public class ReversionTimeStoneAbility implements IGStoneAbility, StoneAbilityStateCleanup {
 
     @Override public String abilityKey() { return "reversion"; }
     @Override public boolean canHoldUse() { return true; }
@@ -38,15 +39,21 @@ public class ReversionTimeStoneAbility implements IGStoneAbility {
     private static final double AOE_RADIUS = 8.0;
 
     private static final SoundEvent CHARGING_SOUND =
-            SoundEvent.createVariableRangeEvent(new ResourceLocation("egm", "time_stone_charging"));
+            SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("egm", "time_stone_charging"));
     private static final SoundEvent TWINKLE_SOUND =
-            SoundEvent.createVariableRangeEvent(new ResourceLocation("egm", "universal_twinkle"));
+            SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("egm", "universal_twinkle"));
 
     private static final int COLOR_A = 0x62FF2D;
     private static final int COLOR_B = 0x0AAA67;
 
     private static final Set<UUID> CHARGING_SOUND_PLAYERS = new HashSet<>();
     private static final Map<UUID, Integer> CHARGE = new HashMap<>();
+
+    @Override
+    public void cleanup(UUID playerId) {
+        CHARGE.remove(playerId);
+        CHARGING_SOUND_PLAYERS.remove(playerId);
+    }
 
     @Override public void activate(Level level, Player player, ItemStack stack) {}
 
@@ -100,7 +107,7 @@ public class ReversionTimeStoneAbility implements IGStoneAbility {
     }
 
     private void doPacify(Level level, Player player, ItemStack stoneStack) {
-        if (StoneAbilityCooldowns.guardUse(player, stoneStack, "time", this)) return;
+        if (StoneEnergyManager.guardUse(player, stoneStack, "time", this)) return;
 
         boolean changedAny = false;
 
@@ -146,7 +153,7 @@ public class ReversionTimeStoneAbility implements IGStoneAbility {
 
         if (changedAny) {
             level.playSound(null, player.blockPosition(), TWINKLE_SOUND, SoundSource.PLAYERS, 1.0F, 1.0F);
-            StoneAbilityCooldowns.apply(player, stoneStack, "time", this);
+            StoneEnergyManager.consumeInstant(player, stoneStack, "time", this);
         }
     }
 
@@ -154,7 +161,7 @@ public class ReversionTimeStoneAbility implements IGStoneAbility {
         var key = ForgeRegistries.ENTITY_TYPES.getKey(type);
         if (key == null) return ItemStack.EMPTY;
         // 1) direct <modid>:<entity>_spawn_egg
-        var rl = new ResourceLocation(key.getNamespace(), key.getPath() + "_spawn_egg");
+        var rl = ResourceLocation.fromNamespaceAndPath(key.getNamespace(), key.getPath() + "_spawn_egg");
         if (ForgeRegistries.ITEMS.containsKey(rl)) {
             Item item = ForgeRegistries.ITEMS.getValue(rl);
             return item == null ? ItemStack.EMPTY : new ItemStack(item);

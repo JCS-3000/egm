@@ -1,14 +1,14 @@
 modLoader = "javafml"
-loaderVersion = "[47,)"
-license = "MIT"
+loaderVersion = "${loader_version_range}"
+license = "${mod_license}"
 
 [[mods]]
-modId = "egm"
-version = "1.0.0"
-displayName = "End Game Mod"
-authors = "JCS"
+modId = "${mod_id}"
+version = "${mod_version}"
+displayName = "${mod_name}"
+authors = "${mod_authors}"
 description = '''
-Infinity Gauntlet mod for Minecraft 1.20.1.
+${mod_description}
 '''
 
 [[dependencies.egm]]
@@ -21,13 +21,13 @@ side = "BOTH"
 [[dependencies.egm]]
 modId = "forge"
 mandatory = true
-versionRange = "[47.0.0,)"
+versionRange = "${forge_version_range}"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.egm]]
 modId = "minecraft"
 mandatory = true
-versionRange = "[1.20.1,1.21)"
+versionRange = "${minecraft_version_range}"
 ordering = "NONE"
 side = "BOTH"

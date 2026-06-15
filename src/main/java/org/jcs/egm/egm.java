@@ -2,7 +2,6 @@ package org.jcs.egm;
 
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -18,8 +17,8 @@ public class egm {
     public static final String MODID = "egm";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public egm() {
-        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+    public egm(FMLJavaModLoadingContext context) {
+        IEventBus modEventBus = context.getModEventBus();
 
         ModDimensions.register(modEventBus);
         modEventBus.addListener(this::setup);
@@ -31,7 +30,7 @@ public class egm {
         ModEntities.ENTITIES.register(modEventBus);
         ModParticles.PARTICLES.register(modEventBus);
         ModEffects.register(modEventBus);
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, ModCommonConfig.COMMON_CONFIG);
+        context.registerConfig(ModConfig.Type.COMMON, ModCommonConfig.COMMON_CONFIG);
     }
 
     private void setup(final FMLCommonSetupEvent event) {

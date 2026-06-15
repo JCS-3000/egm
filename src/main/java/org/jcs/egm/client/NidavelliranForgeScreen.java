@@ -12,7 +12,7 @@ import org.jcs.egm.gui.NidavelliranForgeMenu;
 
 public class NidavelliranForgeScreen extends AbstractContainerScreen<NidavelliranForgeMenu> {
     private static final ResourceLocation TEXTURE = 
-            new ResourceLocation(egm.MODID, "textures/gui/nidavellir_gui.png");
+            ResourceLocation.fromNamespaceAndPath(egm.MODID, "textures/gui/nidavellir_gui.png");
 
     public NidavelliranForgeScreen(NidavelliranForgeMenu menu, Inventory inventory, Component component) {
         super(menu, inventory, component);

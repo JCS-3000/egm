@@ -15,7 +15,10 @@ import org.jcs.egm.particles.ChargingParticleHelper;
 import org.jcs.egm.registry.ModEntities;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneAbilityCooldowns;
+import org.jcs.egm.stones.StoneAbilityCosts;
+import org.jcs.egm.stones.StoneAbilityStateCleanup;
+import org.jcs.egm.stones.ability.ChargedAbilityHelper;
+import org.jcs.egm.stones.ability.ChannelAbilityHelper;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,7 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-public class LifeDrainSoulStoneAbility implements IGStoneAbility {
+public class LifeDrainSoulStoneAbility implements IGStoneAbility, StoneAbilityStateCleanup {
 
     @Override
     public String abilityKey() { return "life_drain"; }
@@ -47,6 +50,16 @@ public class LifeDrainSoulStoneAbility implements IGStoneAbility {
     private static final SoundEvent DRAINING_SOUND = SoundEvent.createVariableRangeEvent(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("egm", "soul_stone_firing"));
 
     @Override
+    public void cleanup(UUID playerId) {
+        activeBeams.remove(playerId);
+        drainingTargets.remove(playerId);
+        lastDrainTime.remove(playerId);
+        chargingSoundPlayers.remove(playerId);
+        drainingSoundPlayers.remove(playerId);
+        drainingSoundStartTick.remove(playerId);
+    }
+
+    @Override
     public void activate(Level level, Player player, ItemStack stack) {}
 
     @Override
@@ -57,9 +70,8 @@ public class LifeDrainSoulStoneAbility implements IGStoneAbility {
         final String stone = "soul";
         final String ability = abilityKey();
 
-        int useDuration = player.getUseItem().getUseDuration();
-        int ticksHeld = useDuration - count;
-        int chargeTicks = StoneAbilityCooldowns.chargeup(stone, ability);
+        int ticksHeld = ChargedAbilityHelper.ticksHeld(player, count);
+        int chargeTicks = StoneAbilityCosts.chargeTicks(stone, ability);
         UUID uuid = player.getUUID();
 
         // --- CHARGING PHASE (2 seconds) ---
@@ -83,6 +95,8 @@ public class LifeDrainSoulStoneAbility implements IGStoneAbility {
         }
 
         // --- DRAINING PHASE ---
+        if (!ChannelAbilityHelper.consumeOrStop(level, player, stack, stone, this)) return;
+
         // Handle draining sound every tick (client-side)
         if (level.isClientSide) {
             if (chargingSoundPlayers.contains(uuid)) {
@@ -141,9 +155,6 @@ public class LifeDrainSoulStoneAbility implements IGStoneAbility {
         // Clear drain target
         drainingTargets.remove(uuid);
         lastDrainTime.remove(uuid);
-
-        // Apply centralized cooldown
-        StoneAbilityCooldowns.apply(player, stack, "soul", this);
     }
 
     private void performLifeDrain(Level level, Player player, UUID uuid) {

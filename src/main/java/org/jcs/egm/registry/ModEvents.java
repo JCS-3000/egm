@@ -22,28 +22,55 @@ import net.minecraft.world.level.block.AnvilBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.jcs.egm.command.SoulRealmCommand;
 import org.jcs.egm.command.SoulStoneRezResetCommand;
-import org.jcs.egm.command.ToggleCooldownsCommand;
+import org.jcs.egm.command.StoneEnergyCommand;
 import org.jcs.egm.egm;
 import org.jcs.egm.registry.ModEffects;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.StoneAbilityRegistries;
+import org.jcs.egm.stones.StoneAbilityStateCleanup;
 import org.jcs.egm.stones.stone_power.EmpoweredPunchPowerStoneAbility;
 import org.jcs.egm.stones.stone_power.PowerStoneItem;
 
 @Mod.EventBusSubscriber(modid = egm.MODID)
 public class ModEvents {
-    private static final SoundEvent POWER_PUNCH_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("egm", "power_punch"));
+    private static final SoundEvent POWER_PUNCH_SOUND = SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("egm", "power_punch"));
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         SoulRealmCommand.register(event.getDispatcher());
         SoulStoneRezResetCommand.register(event.getDispatcher());
-        ToggleCooldownsCommand.register(event.getDispatcher());
+        StoneEnergyCommand.register(event.getDispatcher());
+    }
+
+    @SubscribeEvent
+    public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        cleanupAbilityState(event.getEntity());
+    }
+
+    @SubscribeEvent
+    public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        cleanupAbilityState(event.getEntity());
+    }
+
+    @SubscribeEvent
+    public static void onPlayerDeath(LivingDeathEvent event) {
+        if (event.getEntity() instanceof Player player) {
+            cleanupAbilityState(player);
+        }
+    }
+
+    private static void cleanupAbilityState(Player player) {
+        StoneAbilityRegistries.getAllAbilities().stream()
+                .filter(StoneAbilityStateCleanup.class::isInstance)
+                .map(StoneAbilityStateCleanup.class::cast)
+                .forEach(cleanup -> cleanup.cleanup(player.getUUID()));
     }
 
     @SubscribeEvent

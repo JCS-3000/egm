@@ -22,14 +22,6 @@ java {
     toolchain.languageVersion = JavaLanguageVersion.of(17)
 }
 
-sourceSets {
-    client {
-        java.srcDir 'src/client/java'
-        compileClasspath += sourceSets.main.output
-        runtimeClasspath += sourceSets.main.output
-    }
-}
-
 minecraft {
     mappings channel: 'official', version: '1.20.1'
     copyIdeResources = true
@@ -53,14 +45,13 @@ minecraft {
             mods {
                 "${mod_id}" {
                     source sourceSets.main
-                    source sourceSets.client
                 }
             }
         }
 
         server {
             property 'forge.enabledGameTestNamespaces', mod_id
-            args '--nogui'
+            // args '--nogui'
         }
 
         gameTestServer {
@@ -133,4 +124,5 @@ tasks.named('jar', Jar).configure {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+    options.compilerArgs += ['-Xlint:deprecation']
 }

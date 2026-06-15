@@ -8,13 +8,10 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
-import org.jcs.egm.gauntlet.InfinityGauntletItem;
-import org.jcs.egm.holders.StoneHolderItem;
 
 /**
  * Base class for all Infinity Stones.
- * Uses container-aware, per-player cooldown gating so moving stones between containers
- * cannot reset their cooldown. Also re-syncs the hotbar overlay to the active container.
+ * Base class for raw Infinity Stones.
  */
 public abstract class StoneItem extends Item {
 
@@ -27,16 +24,7 @@ public abstract class StoneItem extends Item {
     public static boolean isRawInInventory(Player player, ItemStack stoneStack) {
         if (player == null || stoneStack == null || stoneStack.isEmpty()) return false;
         for (ItemStack invStack : player.getInventory().items) {
-            if (invStack.getItem() instanceof StoneHolderItem) {
-                ItemStack heldStone = StoneHolderItem.getStone(invStack);
-                if (ItemStack.isSameItemSameTags(stoneStack, heldStone)) return false;
-            }
-            if (invStack.getItem() instanceof InfinityGauntletItem) {
-                for (int i = 0; i < 6; i++) {
-                    ItemStack gs = InfinityGauntletItem.getStoneStack(invStack, i);
-                    if (ItemStack.isSameItemSameTags(stoneStack, gs)) return false;
-                }
-            }
+            if (invStack != stoneStack && StoneContainer.containsStone(invStack, stoneStack)) return false;
         }
         return true;
     }
@@ -44,12 +32,8 @@ public abstract class StoneItem extends Item {
     public static boolean isInGauntlet(Player player, ItemStack stoneStack) {
         if (player == null || stoneStack == null || stoneStack.isEmpty()) return false;
         for (ItemStack invStack : player.getInventory().items) {
-            if (invStack.getItem() instanceof InfinityGauntletItem) {
-                for (int i = 0; i < 6; i++) {
-                    ItemStack gs = InfinityGauntletItem.getStoneStack(invStack, i);
-                    if (ItemStack.isSameItemSameTags(stoneStack, gs)) return true;
-                }
-            }
+            if (invStack.getItem() instanceof org.jcs.egm.gauntlet.InfinityGauntletItem
+                    && StoneContainer.containsStone(invStack, stoneStack)) return true;
         }
         return false;
     }
@@ -57,10 +41,7 @@ public abstract class StoneItem extends Item {
     public static boolean isInHolder(Player player, ItemStack stoneStack) {
         if (player == null || stoneStack == null || stoneStack.isEmpty()) return false;
         for (ItemStack invStack : player.getInventory().items) {
-            if (invStack.getItem() instanceof StoneHolderItem) {
-                ItemStack hs = StoneHolderItem.getStone(invStack);
-                if (ItemStack.isSameItemSameTags(stoneStack, hs)) return true;
-            }
+            if (StoneContainer.isHolderLike(invStack) && StoneContainer.containsStone(invStack, stoneStack)) return true;
         }
         return false;
     }
@@ -98,56 +79,25 @@ public abstract class StoneItem extends Item {
     @Override
     public void onUseTick(Level world, LivingEntity entity, ItemStack stack, int count) {
         if (!(entity instanceof Player player)) return;
-        IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(this.getKey(), stack);
-        if (ability != null && ability.canHoldUse()) {
-            ability.onUsingTick(world, player, stack, count);
-        }
+        StoneAbilityUse.onUseTick(world, player, stack, this.getKey(), count);
     }
 
     @Override
     public void releaseUsing(ItemStack stack, Level world, LivingEntity entity, int timeLeft) {
         if (!(entity instanceof Player player)) return;
-        IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(this.getKey(), stack);
-        if (ability != null && ability.canHoldUse()) {
-            ability.releaseUsing(world, player, stack, timeLeft);
-        }
+        StoneAbilityUse.releaseUsing(world, player, stack, this.getKey(), timeLeft);
     }
 
-    // ---- Dispatcher with persistent gate + overlay re-sync ----
-    protected final InteractionResultHolder<ItemStack> handleAbilityWithCooldown(
+    // ---- Dispatcher with energy gate ----
+    protected final InteractionResultHolder<ItemStack> handleAbilityWithEnergy(
             Level world, Player player, InteractionHand hand, ItemStack stack, StoneState state) {
 
-        IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(this.getKey(), stack);
-        if (ability == null) return InteractionResultHolder.pass(stack);
-
-        // BLOCK if cooling (and re-sync overlay to the current container)
-        if (StoneAbilityCooldowns.guardUse(player, stack, getKey(), ability)) {
-            return InteractionResultHolder.pass(stack);
-        }
-
-        if (ability.canHoldUse()) {
-            player.startUsingItem(hand);
-            return InteractionResultHolder.consume(stack);
-        }
-
-        if (!world.isClientSide) {
-            ability.activate(world, player, stack);
-            // Apply container-aware cooldown + player gate using the stone stack
-            StoneAbilityCooldowns.apply(player, stack, getKey(), ability);
-            return InteractionResultHolder.success(stack);
-        }
-        return InteractionResultHolder.pass(stack);
+        StoneAbilityContext context = StoneAbilityUse.context(world, player, hand, getKey(), stack, stack);
+        return StoneAbilityUse.use(context, stack, () -> {});
     }
 
-    protected abstract InteractionResultHolder<ItemStack> handleStoneUse(
-            Level world, Player player, InteractionHand hand, ItemStack stack, StoneState state);
-
-    public static void openStoneAbilityMenu(ItemStack stack, InteractionHand hand, String stoneKey) {
-        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-        if (mc == null) return;
-        var names = org.jcs.egm.stones.StoneAbilityRegistries.getAbilityNames(stoneKey);
-        if (names == null || names.isEmpty()) return;
-        int idx = stack.hasTag() ? stack.getTag().getInt("AbilityIndex") : 0;
-        mc.setScreen(new org.jcs.egm.client.StoneAbilityMenuScreen(stack, hand, names, idx));
+    protected InteractionResultHolder<ItemStack> handleStoneUse(
+            Level world, Player player, InteractionHand hand, ItemStack stack, StoneState state) {
+        return handleAbilityWithEnergy(world, player, hand, stack, state);
     }
 }

@@ -1,6 +1,5 @@
 package org.jcs.egm.stones.stone_reality;
 
-import net.minecraft.network.chat.Component;
 import org.jcs.egm.stones.IGStoneAbility;
 
 import java.util.ArrayList;
@@ -19,14 +18,6 @@ public class RealityStoneAbilityRegistry {
 
     public static List<IGStoneAbility> getAbilities() {
         return ABILITIES;
-    }
-
-    public static List<Component> getAbilityNames() {
-        List<Component> names = new ArrayList<>();
-        names.add(Component.literal("Willed Chaos"));
-        names.add(Component.literal("Metamorphosis"));
-        // names.add(Component.literal("Another Ability"));
-        return names;
     }
 
     public static IGStoneAbility getSelectedAbility(net.minecraft.world.item.ItemStack stack) {

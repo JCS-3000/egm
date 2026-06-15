@@ -65,7 +65,7 @@ public class InfinityGauntletMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return true; // Add distance or item checks if needed
+        return player.getMainHandItem() == gauntletStack || player.getOffhandItem() == gauntletStack;
     }
 
     @Override

@@ -21,7 +21,10 @@ import org.jcs.egm.particles.ChargingParticleHelper;
 import org.jcs.egm.registry.ModEntities;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneAbilityCooldowns;
+import org.jcs.egm.stones.StoneAbilityCosts;
+import org.jcs.egm.stones.StoneAbilityStateCleanup;
+import org.jcs.egm.stones.ability.ChargedAbilityHelper;
+import org.jcs.egm.stones.ability.ChannelAbilityHelper;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,7 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
+public class InfiniteLightningPowerStoneAbility implements IGStoneAbility, StoneAbilityStateCleanup {
 
     @Override
     public String abilityKey() { return "infinite_lightning"; }
@@ -48,10 +51,21 @@ public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
     private final Map<UUID, Integer> firingSoundStartTick = new HashMap<>();
 
     private static final int FIRING_SOUND_LENGTH_TICKS = 160;
-    private static final SoundEvent CHARGING_SOUND = SoundEvent.createVariableRangeEvent(new net.minecraft.resources.ResourceLocation("egm", "power_stone_charging"));
-    private static final SoundEvent FIRING_SOUND   = SoundEvent.createVariableRangeEvent(new net.minecraft.resources.ResourceLocation("egm", "power_stone_firing"));
+    private static final SoundEvent CHARGING_SOUND = SoundEvent.createVariableRangeEvent(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("egm", "power_stone_charging"));
+    private static final SoundEvent FIRING_SOUND   = SoundEvent.createVariableRangeEvent(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("egm", "power_stone_firing"));
 
     private static final int BEDROCK_BREAK_TICKS = 300;
+
+    @Override
+    public void cleanup(UUID playerId) {
+        activeBeams.remove(playerId);
+        bedrockHitTicks.remove(playerId);
+        lastBlockHit.remove(playerId);
+        lastShotGameTime.remove(playerId);
+        chargingSoundPlayers.remove(playerId);
+        firingSoundPlayers.remove(playerId);
+        firingSoundStartTick.remove(playerId);
+    }
 
     @Override
     public void activate(Level level, Player player, ItemStack stack) {}
@@ -64,9 +78,8 @@ public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
         final String stone = "power";
         final String ability = abilityKey();
 
-        int useDuration = player.getUseItem().getUseDuration();
-        int ticksHeld = useDuration - count;
-        int chargeTicks = StoneAbilityCooldowns.chargeup(stone, ability);
+        int ticksHeld = ChargedAbilityHelper.ticksHeld(player, count);
+        int chargeTicks = StoneAbilityCosts.chargeTicks(stone, ability);
         UUID uuid = player.getUUID();
 
         // --- CHARGING PHASE ---
@@ -88,6 +101,8 @@ public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
         }
 
         // --- FIRING PHASE ---
+        if (!ChannelAbilityHelper.consumeOrStop(level, player, stack, stone, this)) return;
+
         // Handle firing sound every tick (client-side)
         if (level.isClientSide) {
             if (chargingSoundPlayers.contains(uuid)) {
@@ -108,7 +123,7 @@ public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
         }
 
         // Rate-limited server-side logic
-        int interval = Math.max(1, StoneAbilityCooldowns.holdInterval(stone, ability));
+        int interval = Math.max(1, StoneAbilityCosts.holdIntervalTicks(stone, ability));
         long now = level.getGameTime();
         Long last = lastShotGameTime.get(uuid);
         if (last != null && now - last < interval) {
@@ -159,12 +174,10 @@ public class InfiniteLightningPowerStoneAbility implements IGStoneAbility {
             BlockPos prev = lastBlockHit.remove(uuid);
             if (prev != null) sendBlockBreakAnim(player, prev, -1);
         }
-
-        // Apply centralized cooldown
-        StoneAbilityCooldowns.apply(player, stack, "power", this);
     }
 
     // === Core firing logic once per holdInterval ===
+    @SuppressWarnings("deprecation")
     private void fireOneInterval(Level level, Player player, UUID uuid) {
         PowerStoneLightningEntity beam = activeBeams.get(uuid);
 

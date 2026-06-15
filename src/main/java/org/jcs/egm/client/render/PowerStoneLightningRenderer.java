@@ -14,7 +14,7 @@ import org.joml.Quaternionf;
 
 public class PowerStoneLightningRenderer extends EntityRenderer<PowerStoneLightningEntity> {
     private static final ResourceLocation BEAM_TEXTURE =
-            new ResourceLocation("egm:textures/entity/placeholder.png");
+            ResourceLocation.parse("egm:textures/entity/placeholder.png");
 
     private static final int SEGMENTS = 5;
     private static final float SPREAD = 0.4f;

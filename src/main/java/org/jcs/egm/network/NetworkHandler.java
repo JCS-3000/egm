@@ -23,7 +23,7 @@ public class NetworkHandler {
     public static final String PROTOCOL = "1.0";
 
     public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
-            new ResourceLocation(egm.MODID, "main"),
+            ResourceLocation.fromNamespaceAndPath(egm.MODID, "main"),
             () -> PROTOCOL,
             PROTOCOL::equals,
             PROTOCOL::equals
@@ -140,6 +140,7 @@ public class NetworkHandler {
     }
 
     /** Send a tinted particle spawn to all players in the level's dimension. */
+    @SuppressWarnings("deprecation")
     public static void sendTintedParticle(ServerLevel sl,
                                           ParticleType<?> type,
                                           double x, double y, double z,

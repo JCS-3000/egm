@@ -8,7 +8,6 @@ import org.jcs.egm.stones.stone_soul.SoulStoneAbilityRegistry;
 import org.jcs.egm.stones.stone_space.SpaceStoneAbilityRegistry;
 import org.jcs.egm.stones.stone_time.TimeStoneAbilityRegistry;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -22,15 +21,29 @@ public class StoneAbilityRegistries {
      * Example: "power" → ["Infinite Lightning", ...]
      */
     public static List<Component> getAbilityNames(String stoneKey) {
+        return StoneAbilityCosts.displayNamesForStone(stoneKey);
+    }
+
+    public static boolean isValidAbilityIndex(String stoneKey, int index) {
+        return index >= 0 && index < getAbilityNames(stoneKey).size();
+    }
+
+    public static List<IGStoneAbility> getAbilities(String stoneKey) {
         return switch (stoneKey) {
-            case "mind"    -> MindStoneAbilityRegistry.getAbilityNames();
-            case "power"   -> PowerStoneAbilityRegistry.getAbilityNames();
-            case "reality" -> RealityStoneAbilityRegistry.getAbilityNames();
-            case "soul"    -> SoulStoneAbilityRegistry.getAbilityNames();
-            case "space"   -> SpaceStoneAbilityRegistry.getAbilityNames();
-            case "time"    -> TimeStoneAbilityRegistry.getAbilityNames();
-            default        -> Collections.emptyList();
+            case "mind"    -> MindStoneAbilityRegistry.getAbilities();
+            case "power"   -> PowerStoneAbilityRegistry.getAbilities();
+            case "reality" -> RealityStoneAbilityRegistry.getAbilities();
+            case "soul"    -> SoulStoneAbilityRegistry.getAbilities();
+            case "space"   -> SpaceStoneAbilityRegistry.getAbilities();
+            case "time"    -> TimeStoneAbilityRegistry.getAbilities();
+            default        -> List.of();
         };
+    }
+
+    public static List<IGStoneAbility> getAllAbilities() {
+        return List.of("mind", "power", "reality", "soul", "space", "time").stream()
+                .flatMap(stone -> getAbilities(stone).stream())
+                .toList();
     }
 
     /**

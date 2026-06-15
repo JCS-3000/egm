@@ -23,14 +23,15 @@ import net.minecraftforge.fml.common.Mod;
 import org.jcs.egm.network.NetworkHandler;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneAbilityCooldowns;
+import org.jcs.egm.stones.StoneAbilityStateCleanup;
+import org.jcs.egm.stones.StoneEnergyManager;
 import org.joml.Vector3f;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Mod.EventBusSubscriber(modid = "egm", bus = Mod.EventBusSubscriber.Bus.FORGE)
-public class TimeFreezeTimeStoneAbility implements IGStoneAbility {
+public class TimeFreezeTimeStoneAbility implements IGStoneAbility, StoneAbilityStateCleanup {
 
     @Override public String abilityKey() { return "freeze"; }
     @Override public boolean canHoldUse() { return true; }
@@ -54,6 +55,12 @@ public class TimeFreezeTimeStoneAbility implements IGStoneAbility {
 
     private static final Set<UUID> CHARGING_SOUND_PLAYERS = new HashSet<>();
     private static final Map<UUID, Integer> CHARGE = new HashMap<>();
+
+    @Override
+    public void cleanup(UUID playerId) {
+        CHARGE.remove(playerId);
+        CHARGING_SOUND_PLAYERS.remove(playerId);
+    }
     
     /**
      * Returns the activation sound - 95% chance for universal_twinkle, 5% chance for how_strange
@@ -64,7 +71,7 @@ public class TimeFreezeTimeStoneAbility implements IGStoneAbility {
 
     @Override
     public void activate(Level level, Player player, ItemStack stack) {
-        if (StoneAbilityCooldowns.guardUse(player, stack, "time", this)) return;
+        if (StoneEnergyManager.guardUse(player, stack, "time", this)) return;
         CHARGE.remove(player.getUUID());
     }
 
@@ -125,7 +132,7 @@ public class TimeFreezeTimeStoneAbility implements IGStoneAbility {
 
     // ===== Core effect (server) =====
     private void fire(Level level, Player player, ItemStack stoneStack) {
-        if (StoneAbilityCooldowns.guardUse(player, stoneStack, "time", this)) return;
+        if (StoneEnergyManager.guardUse(player, stoneStack, "time", this)) return;
 
         level.playSound(null, player.blockPosition(), getRandomActivationSound(), SoundSource.PLAYERS, 1.0F, 1.0F);
 
@@ -155,7 +162,7 @@ public class TimeFreezeTimeStoneAbility implements IGStoneAbility {
                 le.hurtMarked = true;
                 le.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, FREEZE_TICKS, SLOWNESS_LEVEL, false, true, true));
             }
-            StoneAbilityCooldowns.apply(player, stoneStack, "time", this);
+            StoneEnergyManager.consumeInstant(player, stoneStack, "time", this);
         }
     }
 

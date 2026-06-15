@@ -1,6 +1,5 @@
 package org.jcs.egm.stones.stone_space;
 
-import net.minecraft.network.chat.Component;
 import org.jcs.egm.stones.IGStoneAbility;
 
 import java.util.ArrayList;
@@ -20,14 +19,6 @@ public class SpaceStoneAbilityRegistry {
 
     public static List<IGStoneAbility> getAbilities() {
         return ABILITIES;
-    }
-
-    public static List<Component> getAbilityNames() {
-        List<Component> names = new ArrayList<>();
-        names.add(Component.literal("Enderic Beam"));
-        names.add(Component.literal("Singularity"));
-        names.add(Component.literal("Moon Toss"));
-        return names;
     }
 
     public static IGStoneAbility getSelectedAbility(net.minecraft.world.item.ItemStack stack) {

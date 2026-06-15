@@ -6,6 +6,8 @@ import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.network.NetworkEvent;
 import org.jcs.egm.holders.StoneHolderItem;
 import org.jcs.egm.gauntlet.InfinityGauntletItem;
+import org.jcs.egm.stones.StoneAbilityRegistries;
+import org.jcs.egm.stones.StoneItem;
 
 import java.util.function.Supplier;
 
@@ -32,10 +34,12 @@ public class C2SSetStoneAbilityIndex {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
             if (player == null) return;
+            if (hand != 0 && hand != 1) return;
             var stack = player.getItemInHand(hand == 0 ? net.minecraft.world.InteractionHand.MAIN_HAND : net.minecraft.world.InteractionHand.OFF_HAND);
 
             // Stone Holder
-            if (stack.getItem() instanceof StoneHolderItem) {
+            if (stack.getItem() instanceof StoneHolderItem holder) {
+                if (!StoneAbilityRegistries.isValidAbilityIndex(holder.getStoneKey(), index)) return;
                 var inside = StoneHolderItem.getStone(stack);
                 if (!inside.isEmpty()) {
                     inside.getOrCreateTag().putInt("AbilityIndex", index);
@@ -45,6 +49,9 @@ public class C2SSetStoneAbilityIndex {
             // Gauntlet
             else if (stack.getItem() instanceof InfinityGauntletItem) {
                 int stoneIdx = InfinityGauntletItem.getSelectedStone(stack);
+                if (stoneIdx < 0 || stoneIdx >= 6) return;
+                String stoneKey = InfinityGauntletItem.getSelectedStoneName(stack);
+                if (!StoneAbilityRegistries.isValidAbilityIndex(stoneKey, index)) return;
                 ItemStackHandler handler = new ItemStackHandler(6);
                 if (stack.hasTag() && stack.getTag().contains("Stones")) {
                     handler.deserializeNBT(stack.getTag().getCompound("Stones"));
@@ -57,7 +64,8 @@ public class C2SSetStoneAbilityIndex {
                 }
             }
             // Raw stone or fallback
-            else {
+            else if (stack.getItem() instanceof StoneItem stoneItem
+                    && StoneAbilityRegistries.isValidAbilityIndex(stoneItem.getKey(), index)) {
                 stack.getOrCreateTag().putInt("AbilityIndex", index);
             }
         });

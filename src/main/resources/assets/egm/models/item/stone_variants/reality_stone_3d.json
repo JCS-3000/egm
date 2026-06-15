@@ -1,7 +1,6 @@
 {
-	"format_version": "1.21.6",
+	"format_version": "1.9.0",
 	"credit": "Made with Blockbench",
-	"parent": "item/default",
 	"texture_size": [32, 32],
 	"textures": {
 		"2": "egm:item/stone_assets/reality_texture_3d",

@@ -19,9 +19,9 @@ import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
-import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneAbilityRegistries;
-import org.jcs.egm.stones.StoneAbilityCooldowns;
+import org.jcs.egm.stones.StoneAbilityContext;
+import org.jcs.egm.stones.StoneAbilityUse;
+import org.jcs.egm.stones.StoneEnergyManager;
 
 public class LokianScepterItem extends SwordItem {
     private static final String STONE_TYPE = "mind";
@@ -38,6 +38,7 @@ public class LokianScepterItem extends SwordItem {
         public float getAttackDamageBonus() { return 0.0f; } // +2 base damage = 2 total
         
         @Override
+        @SuppressWarnings("deprecation")
         public int getLevel() { return 2; }
         
         @Override
@@ -70,7 +71,7 @@ public class LokianScepterItem extends SwordItem {
         setStone(holder, inside, null);
     }
 
-    /** Same as setStone(holder, inside) but also transfers cooldown overlay if a player context is available */
+    /** Same as setStone(holder, inside) but also initializes/refreshes energy if a player context is available */
     public static void setStone(ItemStack holder, ItemStack inside, Player actor) {
         if (holder == null || holder.isEmpty()) return;
         ItemStackHandler handler = new ItemStackHandler(1);
@@ -79,9 +80,8 @@ public class LokianScepterItem extends SwordItem {
         holder.getTag().put("Stone", handler.serializeNBT());
         updateStoneBitmaskNBT(holder);
 
-        // If this write is due to an insertion by a player, re-sync any remaining cooldown overlay to this holder.
         if (actor != null) {
-            StoneAbilityCooldowns.transferOnInsert(actor, holder);
+            StoneEnergyManager.refreshOnInsert(actor, holder);
         }
     }
 
@@ -132,25 +132,8 @@ public class LokianScepterItem extends SwordItem {
         if (inside.isEmpty()) {
             return InteractionResultHolder.pass(holder);
         }
-        IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(STONE_TYPE, inside);
-        if (ability == null) return InteractionResultHolder.pass(holder);
-
-        // Universal guard: blocks if on cooldown (container-independent) and re-syncs overlay to this holder.
-        if (StoneAbilityCooldowns.guardUse(player, inside, STONE_TYPE, ability)) {
-            return InteractionResultHolder.pass(holder);
-        }
-
-        if (ability.canHoldUse()) {
-            player.startUsingItem(hand);
-            return InteractionResultHolder.consume(holder);
-        } else if (!world.isClientSide) {
-            ability.activate(world, player, inside);
-            // Apply container-aware cooldown + player gate using the STONE stack
-            StoneAbilityCooldowns.apply(player, inside, STONE_TYPE, ability);
-            setStone(holder, inside, player);
-            return InteractionResultHolder.success(holder);
-        }
-        return InteractionResultHolder.pass(holder);
+        StoneAbilityContext context = StoneAbilityUse.context(world, player, hand, STONE_TYPE, inside, holder);
+        return StoneAbilityUse.use(context, holder, () -> setStone(holder, inside, player));
     }
 
     @Override
@@ -167,23 +150,15 @@ public class LokianScepterItem extends SwordItem {
     public void onUseTick(Level world, LivingEntity entity, ItemStack holder, int count) {
         if (!(entity instanceof Player player)) return;
         ItemStack inside = getStone(holder);
-        IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(STONE_TYPE, inside);
-        if (ability != null && ability.canHoldUse()) {
-            ability.onUsingTick(world, player, inside, count);
-            setStone(holder, inside, player);
-        }
+        StoneAbilityUse.onUseTick(world, player, inside, STONE_TYPE, count);
+        setStone(holder, inside, player);
     }
 
     @Override
     public void releaseUsing(ItemStack holder, Level world, LivingEntity entity, int timeLeft) {
         if (!(entity instanceof Player player)) return;
         ItemStack inside = getStone(holder);
-        IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(STONE_TYPE, inside);
-        if (ability != null && ability.canHoldUse()) {
-            ability.releaseUsing(world, player, inside, timeLeft);
-            // Apply container-aware cooldown + player gate at the moment the hold ability "fires"/releases
-            StoneAbilityCooldowns.apply(player, inside, STONE_TYPE, ability);
-            setStone(holder, inside, player);
-        }
+        StoneAbilityUse.releaseUsing(world, player, inside, STONE_TYPE, timeLeft);
+        setStone(holder, inside, player);
     }
 }

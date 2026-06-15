@@ -11,7 +11,7 @@ import org.jcs.egm.holders.StoneHolderMenu;
 public class StoneHolderScreen extends AbstractContainerScreen<StoneHolderMenu> {
 
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation("egm", "textures/gui/stonemenugui.png");
+            ResourceLocation.fromNamespaceAndPath("egm", "textures/gui/stonemenugui.png");
 
     public StoneHolderScreen(StoneHolderMenu menu, Inventory inv, Component title) {
         super(menu, inv, title);

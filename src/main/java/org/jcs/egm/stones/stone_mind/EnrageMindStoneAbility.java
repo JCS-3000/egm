@@ -6,11 +6,10 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneAbilityCooldowns;
+import org.jcs.egm.stones.StoneEnergyManager;
 
 import java.util.Comparator;
 import java.util.List;
@@ -23,9 +22,6 @@ public class EnrageMindStoneAbility implements IGStoneAbility {
 
     @Override
     public void activate(Level level, Player player, ItemStack stack) {
-        Item cdItem = StoneAbilityCooldowns.pickCooldownItem(player, stack);
-        if (StoneAbilityCooldowns.isCooling(player, cdItem)) return;
-
         if (!(player instanceof ServerPlayer serverPlayer)) return;
 
         List<Mob> mobs = level.getEntitiesOfClass(Mob.class, player.getBoundingBox().inflate(10));
@@ -56,7 +52,7 @@ public class EnrageMindStoneAbility implements IGStoneAbility {
             }
         }
 
-        StoneAbilityCooldowns.apply(player, cdItem, "mind", abilityKey());
+        StoneEnergyManager.consumeInstant(player, stack, "mind", abilityKey());
     }
 
     @Override

@@ -1,6 +1,0 @@
-{
-  "parent": "item/handheld",
-  "textures": {
-    "layer0": "egm:item/stone_assets/power_texture_2d"
-  }
-}

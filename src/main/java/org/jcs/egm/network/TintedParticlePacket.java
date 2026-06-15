@@ -1,7 +1,6 @@
 package org.jcs.egm.network;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -35,6 +34,7 @@ public class TintedParticlePacket {
         buf.writeFloat(pkt.r); buf.writeFloat(pkt.g); buf.writeFloat(pkt.b);
     }
 
+    @SuppressWarnings("deprecation")
     public void handle(Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() ->
                 DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {

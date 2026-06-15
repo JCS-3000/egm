@@ -9,7 +9,6 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
@@ -17,7 +16,7 @@ import net.minecraft.world.phys.*;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneAbilityCooldowns;
+import org.jcs.egm.stones.StoneEnergyManager;
 import org.jcs.egm.stones.StoneItem;
 import org.jcs.egm.stones.StoneUseDamage;
 import org.joml.Vector3f;
@@ -37,17 +36,14 @@ public class MetamorphosisRealityStoneAbility implements IGStoneAbility {
     private static final double MAX_RANGE = 50.0D;
     private static final int DURATION_TICKS = 60 * 20; // 60 seconds
 
-    private static final SoundEvent BEAM_SOUND   = SoundEvent.createVariableRangeEvent(new ResourceLocation("egm", "reality_stone_firing"));
-    private static final SoundEvent CHANGE_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("egm", "reality_stone_change"));
+    private static final SoundEvent BEAM_SOUND   = SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("egm", "reality_stone_firing"));
+    private static final SoundEvent CHANGE_SOUND = SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("egm", "reality_stone_change"));
 
     @Override
     public void activate(Level level, Player player, ItemStack stack) {
         if (level.isClientSide) return; // server-only from here
 
-        // Cooldown
-        Item cdItem = StoneAbilityCooldowns.pickCooldownItem(player, stack);
-        if (StoneAbilityCooldowns.isCooling(player, cdItem)) return;
-        StoneAbilityCooldowns.apply(player, cdItem, "reality", abilityKey());
+        if (!StoneEnergyManager.consumeInstant(player, stack, "reality", abilityKey())) return;
 
         // Raw stone cost
         if (!StoneItem.isInGauntlet(player, stack)) {

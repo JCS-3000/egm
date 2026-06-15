@@ -11,7 +11,7 @@ import org.jcs.egm.gauntlet.InfinityGauntletMenu;
 public class InfinityGauntletScreen extends AbstractContainerScreen<InfinityGauntletMenu> {
 
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation("egm", "textures/gui/gauntletgui.png");
+            ResourceLocation.fromNamespaceAndPath("egm", "textures/gui/gauntletgui.png");
 
     public InfinityGauntletScreen(InfinityGauntletMenu menu, Inventory inv, Component title) {
         super(menu, inv, title);

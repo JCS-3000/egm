@@ -11,7 +11,7 @@ import net.minecraft.world.phys.Vec3;
 import org.jcs.egm.entity.SingularityEntity;
 import org.jcs.egm.registry.ModEntities;
 import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneAbilityCooldowns;
+import org.jcs.egm.stones.StoneEnergyManager;
 
 public class SingularitySpaceStoneAbility implements IGStoneAbility {
 
@@ -27,8 +27,7 @@ public class SingularitySpaceStoneAbility implements IGStoneAbility {
     public void activate(Level level, Player player, ItemStack stack) {
         if (level.isClientSide) return;
         
-        // Guard against cooldown usage
-        if (StoneAbilityCooldowns.guardUse(player, stack, "space", this)) return;
+        if (!StoneEnergyManager.consumeInstant(player, stack, "space", this)) return;
 
         // Get target location where player is looking
         Vec3 eyePos = player.getEyePosition();
@@ -52,8 +51,6 @@ public class SingularitySpaceStoneAbility implements IGStoneAbility {
             SingularityEntity singularity = new SingularityEntity(ModEntities.SINGULARITY.get(), server, singularityPos, player.getUUID());
             server.addFreshEntity(singularity);
         }
-
-        StoneAbilityCooldowns.apply(player, stack, "space", this);
     }
 
     @Override

@@ -1,6 +1,7 @@
 package org.jcs.egm.config;
 
 import net.minecraftforge.common.ForgeConfigSpec;
+import org.jcs.egm.stones.StoneAbilityCosts;
 
 import java.util.List;
 
@@ -24,6 +25,16 @@ public class ModCommonConfig {
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> MIND_STONE_SWIMSPEED_ENTITIES;
 
     public static final ForgeConfigSpec.BooleanValue ENABLE_CAMERA_SHAKE;
+    public static final ForgeConfigSpec.IntValue RAW_STONE_ENERGY_CAPACITY;
+    public static final ForgeConfigSpec.IntValue STONE_HOLDER_ENERGY_CAPACITY;
+    public static final ForgeConfigSpec.IntValue GAUNTLET_ENERGY_CAPACITY;
+    public static final ForgeConfigSpec.DoubleValue RAW_STONE_ENERGY_REGEN_PER_SECOND;
+    public static final ForgeConfigSpec.DoubleValue STONE_HOLDER_ENERGY_REGEN_PER_SECOND;
+    public static final ForgeConfigSpec.DoubleValue GAUNTLET_ENERGY_REGEN_PER_SECOND;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> STONE_ABILITY_INSTANT_COSTS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> STONE_ABILITY_CHANNEL_COSTS_PER_SECOND;
+    public static final ForgeConfigSpec.ConfigValue<String> STONE_ENERGY_BAR_BACKGROUND_TEXTURE;
+    public static final ForgeConfigSpec.ConfigValue<String> STONE_ENERGY_BAR_FILL_TEXTURE;
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -33,6 +44,56 @@ public class ModCommonConfig {
         ENABLE_CAMERA_SHAKE = builder
                 .comment("If true, certain abilities (e.g., Shockwave Slam) will trigger a client-side camera shake.")
                 .define("enable_camera_shake", true);
+        builder.pop();
+
+        // ---------- Stone Energy ----------
+        builder.push("StoneEnergy");
+        RAW_STONE_ENERGY_CAPACITY = builder
+                .comment("Maximum energy stored by a raw Infinity Stone.")
+                .defineInRange("raw_stone_capacity", 300, 1, 100000);
+        STONE_HOLDER_ENERGY_CAPACITY = builder
+                .comment("Maximum energy stored by a Stone Holder.")
+                .defineInRange("stone_holder_capacity", 800, 1, 100000);
+        GAUNTLET_ENERGY_CAPACITY = builder
+                .comment("Maximum energy stored by the Infinity Gauntlet. This is one shared pool for all inserted stones.")
+                .defineInRange("gauntlet_capacity", 1000, 1, 100000);
+        RAW_STONE_ENERGY_REGEN_PER_SECOND = builder
+                .comment("Energy regenerated per second by raw Infinity Stones.")
+                .defineInRange("raw_stone_regen_per_second", 2.0D, 0.0D, 100000.0D);
+        STONE_HOLDER_ENERGY_REGEN_PER_SECOND = builder
+                .comment("Energy regenerated per second by Stone Holders.")
+                .defineInRange("stone_holder_regen_per_second", 5.0D, 0.0D, 100000.0D);
+        GAUNTLET_ENERGY_REGEN_PER_SECOND = builder
+                .comment("Energy regenerated per second by the Infinity Gauntlet.")
+                .defineInRange("gauntlet_regen_per_second", 8.0D, 0.0D, 100000.0D);
+
+        STONE_ABILITY_INSTANT_COSTS = builder
+                .comment(
+                        "Energy costs for instant abilities. Format: stone:ability=cost.",
+                        "Charged abilities are charged when they fire, not while charging.",
+                        "Set an entry to 0 to make that ability free."
+                )
+                .defineListAllowEmpty(
+                        "instant_costs",
+                        StoneAbilityCosts.defaultInstantCostConfig(),
+                        obj -> obj instanceof String s && s.matches("[a-z0-9_]+:[a-z0-9_]+=\\d+"));
+
+        STONE_ABILITY_CHANNEL_COSTS_PER_SECOND = builder
+                .comment(
+                        "Energy costs per second for channeling abilities. Format: stone:ability=cost_per_second.",
+                        "These costs are drained only after any charge-up completes."
+                )
+                .defineListAllowEmpty(
+                        "channel_costs_per_second",
+                        StoneAbilityCosts.defaultChannelCostConfig(),
+                        obj -> obj instanceof String s && s.matches("[a-z0-9_]+:[a-z0-9_]+=\\d+"));
+
+        STONE_ENERGY_BAR_BACKGROUND_TEXTURE = builder
+                .comment("Optional GUI texture for the stone energy meter background. Leave empty to use fallback rectangles. Format: modid:path")
+                .define("bar_background_texture", "");
+        STONE_ENERGY_BAR_FILL_TEXTURE = builder
+                .comment("Optional GUI texture for the stone energy meter fill. Leave empty to use fallback rectangles. Format: modid:path")
+                .define("bar_fill_texture", "");
         builder.pop();
 
         // ---------- Reality Stone ----------

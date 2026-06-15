@@ -26,7 +26,7 @@ import java.util.*;
 
 @Mod.EventBusSubscriber(modid = "egm", bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class MorphData {
-    public static final ResourceLocation CAP_ID = new ResourceLocation("egm", "morph");
+    public static final ResourceLocation CAP_ID = ResourceLocation.fromNamespaceAndPath("egm", "morph");
     public static final Capability<MorphState> CAP = CapabilityManager.get(new CapabilityToken<>(){});
 
     private static final Set<String> DEFAULT_FLY = Set.of(
@@ -259,7 +259,7 @@ public class MorphData {
         }
 
         public void deserializeNBT(CompoundTag tag) {
-            mobId = tag.contains("MobId") ? new ResourceLocation(tag.getString("MobId")) : null;
+            mobId = tag.contains("MobId") ? ResourceLocation.parse(tag.getString("MobId")) : null;
             expiresAt = tag.getLong("ExpiresAt");
             flags = tag.getByte("Flags");
         }

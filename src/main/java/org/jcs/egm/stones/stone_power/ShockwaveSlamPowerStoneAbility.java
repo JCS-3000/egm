@@ -19,12 +19,14 @@ import org.jcs.egm.network.packet.ShakeCameraPacket;
 import org.jcs.egm.particles.ChargingParticleHelper;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneAbilityCooldowns;
+import org.jcs.egm.stones.StoneAbilityCosts;
+import org.jcs.egm.stones.StoneAbilityStateCleanup;
+import org.jcs.egm.stones.StoneEnergyManager;
 import org.jcs.egm.stones.StoneUseDamage;
 
 import java.util.*;
 
-public class ShockwaveSlamPowerStoneAbility implements IGStoneAbility {
+public class ShockwaveSlamPowerStoneAbility implements IGStoneAbility, StoneAbilityStateCleanup {
 
     @Override
     public String abilityKey() { return "shockwave_slam"; }
@@ -53,11 +55,17 @@ public class ShockwaveSlamPowerStoneAbility implements IGStoneAbility {
     private static final int   SHAKE_TICKS     = 14;
     private static final float SHAKE_INTENSITY = 1.1f;
 
-    private static final SoundEvent CHARGING_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("egm", "power_stone_charging"));
-    private static final SoundEvent POWER_STONE_EXPLOSION = SoundEvent.createVariableRangeEvent(new ResourceLocation("egm", "power_stone_explosion"));
+    private static final SoundEvent CHARGING_SOUND = SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("egm", "power_stone_charging"));
+    private static final SoundEvent POWER_STONE_EXPLOSION = SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("egm", "power_stone_explosion"));
 
     private static final Set<UUID> CHARGING_SOUND_PLAYERS = new HashSet<>();
     private static final Map<UUID, Integer> CHARGE = new HashMap<>();
+
+    @Override
+    public void cleanup(UUID playerId) {
+        CHARGE.remove(playerId);
+        CHARGING_SOUND_PLAYERS.remove(playerId);
+    }
 
     @Override
     public void activate(Level level, Player player, ItemStack stack) {}
@@ -71,7 +79,7 @@ public class ShockwaveSlamPowerStoneAbility implements IGStoneAbility {
         final String ability = abilityKey();
         int useDuration = player.getUseItem().getUseDuration();
         int ticksHeld = useDuration - count;
-        int chargeTicks = StoneAbilityCooldowns.chargeup(stone, ability);
+        int chargeTicks = StoneAbilityCosts.chargeTicks(stone, ability);
         UUID id = player.getUUID();
 
         if (ticksHeld < chargeTicks) {
@@ -98,7 +106,7 @@ public class ShockwaveSlamPowerStoneAbility implements IGStoneAbility {
                 if (prev == null || prev < chargeTicks) {
                     CHARGE.put(id, chargeTicks);
                     doSlam(level, player);
-                    StoneAbilityCooldowns.apply(player, stack, stone, this);
+                    StoneEnergyManager.consumeInstant(player, stack, stone, this);
                     if (player instanceof ServerPlayer sp) sp.stopUsingItem();
                 }
             } else {
@@ -124,11 +132,11 @@ public class ShockwaveSlamPowerStoneAbility implements IGStoneAbility {
         Integer charged = CHARGE.remove(id);
 
         if (level.isClientSide) stopChargingSoundClient(id);
-        if (charged == null || charged < StoneAbilityCooldowns.chargeup(stone, abilityKey())) return;
+        if (charged == null || charged < StoneAbilityCosts.chargeTicks(stone, abilityKey())) return;
 
         if (!level.isClientSide && !AUTO_FIRE_AT_FULL) {
             doSlam(level, player);
-            StoneAbilityCooldowns.apply(player, stack, stone, this);
+            StoneEnergyManager.consumeInstant(player, stack, stone, this);
         }
     }
 

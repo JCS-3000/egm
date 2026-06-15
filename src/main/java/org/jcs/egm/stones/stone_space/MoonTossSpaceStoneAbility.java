@@ -20,18 +20,26 @@ import org.jcs.egm.entity.MeteorEntity;
 import org.jcs.egm.particles.ChargingParticleHelper;
 import org.jcs.egm.registry.ModEntities;
 import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneAbilityCooldowns;
+import org.jcs.egm.stones.StoneAbilityCosts;
+import org.jcs.egm.stones.StoneAbilityStateCleanup;
+import org.jcs.egm.stones.StoneEnergyManager;
 
 import net.minecraft.util.RandomSource;
 import java.util.*;
 
-public class MoonTossSpaceStoneAbility implements IGStoneAbility {
+public class MoonTossSpaceStoneAbility implements IGStoneAbility, StoneAbilityStateCleanup {
 
     private static final int METEOR_COUNT = 20;
     private static final boolean AUTO_FIRE_AT_FULL = true;
     private static final Set<UUID> CHARGING_SOUND_PLAYERS = new HashSet<>();
     private static final Map<UUID, Integer> CHARGE = new HashMap<>();
     private static final SoundEvent SPACE_STONE_CHARGING_SOUND = SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("egm", "space_stone_charging"));
+
+    @Override
+    public void cleanup(UUID playerId) {
+        CHARGE.remove(playerId);
+        CHARGING_SOUND_PLAYERS.remove(playerId);
+    }
 
     @Override
     public String abilityKey() { return "moon_toss"; }
@@ -50,7 +58,7 @@ public class MoonTossSpaceStoneAbility implements IGStoneAbility {
         final String ability = abilityKey();
         int useDuration = player.getUseItem().getUseDuration();
         int ticksHeld = useDuration - count;
-        int chargeTicks = StoneAbilityCooldowns.chargeup(stone, ability);
+        int chargeTicks = StoneAbilityCosts.chargeTicks(stone, ability);
         UUID id = player.getUUID();
 
         if (ticksHeld < chargeTicks) {
@@ -104,7 +112,7 @@ public class MoonTossSpaceStoneAbility implements IGStoneAbility {
         Integer charged = CHARGE.remove(id);
 
         if (level.isClientSide) stopChargingSoundClient(id);
-        if (charged == null || charged < StoneAbilityCooldowns.chargeup(stone, abilityKey())) return;
+        if (charged == null || charged < StoneAbilityCosts.chargeTicks(stone, abilityKey())) return;
 
         if (!level.isClientSide && !AUTO_FIRE_AT_FULL) {
             executeMoonToss(level, player, stack);
@@ -119,8 +127,7 @@ public class MoonTossSpaceStoneAbility implements IGStoneAbility {
         // Spawn 5 meteors above the target area
         spawnMeteors((ServerLevel) level, player, targetLocation);
 
-        // Apply cooldown
-        StoneAbilityCooldowns.apply(player, stack, "space", this);
+        StoneEnergyManager.consumeInstant(player, stack, "space", this);
     }
 
     private void stopChargingSoundClient(UUID id) {

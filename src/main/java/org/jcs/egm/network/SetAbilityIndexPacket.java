@@ -8,6 +8,8 @@ import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.network.NetworkEvent;
 import org.jcs.egm.gauntlet.InfinityGauntletItem;
 import org.jcs.egm.holders.StoneHolderItem;
+import org.jcs.egm.stones.StoneAbilityRegistries;
+import org.jcs.egm.stones.StoneItem;
 
 import java.util.function.Supplier;
 
@@ -41,7 +43,8 @@ public class SetAbilityIndexPacket {
             ItemStack stack = player.getItemInHand(hand);
             if (!stack.isEmpty()) {
                 // For Stone Holder
-                if (stack.getItem() instanceof StoneHolderItem) {
+                if (stack.getItem() instanceof StoneHolderItem holder) {
+                    if (!StoneAbilityRegistries.isValidAbilityIndex(holder.getStoneKey(), index)) return;
                     ItemStack inside = StoneHolderItem.getStone(stack);
                     if (!inside.isEmpty()) {
                         inside.getOrCreateTag().putInt("AbilityIndex", index);
@@ -51,6 +54,9 @@ public class SetAbilityIndexPacket {
                 // For Gauntlet
                 else if (stack.getItem() instanceof InfinityGauntletItem) {
                     int stoneIdx = InfinityGauntletItem.getSelectedStone(stack);
+                    if (stoneIdx < 0 || stoneIdx >= 6) return;
+                    String stoneKey = InfinityGauntletItem.getSelectedStoneName(stack);
+                    if (!StoneAbilityRegistries.isValidAbilityIndex(stoneKey, index)) return;
                     ItemStackHandler handler = new ItemStackHandler(6);
                     if (stack.hasTag() && stack.getTag().contains("Stones")) {
                         handler.deserializeNBT(stack.getTag().getCompound("Stones"));
@@ -64,7 +70,8 @@ public class SetAbilityIndexPacket {
                     }
                 }
                 // For raw stone or fallback
-                else {
+                else if (stack.getItem() instanceof StoneItem stoneItem
+                        && StoneAbilityRegistries.isValidAbilityIndex(stoneItem.getKey(), index)) {
                     stack.getOrCreateTag().putInt("AbilityIndex", index);
                 }
             }

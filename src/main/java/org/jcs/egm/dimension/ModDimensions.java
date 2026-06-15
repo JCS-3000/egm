@@ -18,7 +18,7 @@ public class ModDimensions {
     // ResourceKey for the Soul Realm dimension
     public static final ResourceKey<Level> SOUL_REALM = ResourceKey.create(
             Registries.DIMENSION,
-            new ResourceLocation("egm", "soul_realm")
+            ResourceLocation.fromNamespaceAndPath("egm", "soul_realm")
     );
 
     // DeferredRegister for custom ChunkGenerator codecs (mod id: "egm")

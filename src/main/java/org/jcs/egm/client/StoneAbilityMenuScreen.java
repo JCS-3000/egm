@@ -19,9 +19,9 @@ import java.util.List;
 
 public class StoneAbilityMenuScreen extends Screen {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation("egm:textures/gui/stoneabilitygui.png");
+            ResourceLocation.parse("egm:textures/gui/stoneabilitygui.png");
     private static final ResourceLocation ARROW_TEX =
-            new ResourceLocation("egm:textures/gui/arrow.png");
+            ResourceLocation.parse("egm:textures/gui/arrow.png");
 
     private final ItemStack stoneStack;
     private final InteractionHand hand;
@@ -156,17 +156,13 @@ public class StoneAbilityMenuScreen extends Screen {
     @Override
     public void onClose() {
         saveSelection();
-        System.out.println("[CLIENT] Menu closed; index: " + selectedIndex + " for stack: " + stoneStack);
         if (Minecraft.getInstance().player != null && Minecraft.getInstance().player.connection != null) {
-            System.out.println("[CLIENT] Sending SetAbilityIndexPacket: " + selectedIndex + ", hand: " + hand);
             NetworkHandler.INSTANCE.sendToServer(new SetAbilityIndexPacket(selectedIndex, hand));
         }
         super.onClose();
     }
 
     private void saveSelection() {
-        System.out.println("[CLIENT] Saving selection: " + selectedIndex + " for stack: " + stoneStack);
-
         // Always try to set the AbilityIndex on the *stone* inside the holder or gauntlet
         if (stoneStack.getItem() instanceof StoneHolderItem) {
             ItemStack inside = StoneHolderItem.getStone(stoneStack);

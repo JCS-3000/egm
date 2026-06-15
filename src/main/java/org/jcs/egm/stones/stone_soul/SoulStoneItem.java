@@ -3,8 +3,6 @@ package org.jcs.egm.stones.stone_soul;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
@@ -21,9 +19,7 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 import org.jcs.egm.gauntlet.InfinityGauntletItem;
 import org.jcs.egm.holders.StoneHolderItem;
 import org.jcs.egm.registry.ModItems;
-import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneAbilityRegistries;
-import org.jcs.egm.stones.StoneAbilityCooldowns;
+import org.jcs.egm.stones.StoneEnergyManager;
 import org.jcs.egm.stones.StoneItem;
 
 import java.util.UUID;
@@ -35,49 +31,9 @@ public class SoulStoneItem extends StoneItem {
     @Override public String getKey()   { return "soul"; }
     @Override public int    getColor() { return 0xFF7F00; }
 
-    // ===== Active ability dispatch (sanitized) ============================================
-
-    @Override
-    protected InteractionResultHolder<ItemStack> handleStoneUse(Level world, Player player, InteractionHand hand, ItemStack stack, StoneState state) {
-        IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(getKey(), stack);
-        if (ability == null) return InteractionResultHolder.pass(stack);
-
-        if (StoneAbilityCooldowns.guardUse(player, stack, getKey(), ability)) {
-            return InteractionResultHolder.pass(stack);
-        }
-        if (ability.canHoldUse()) {
-            player.startUsingItem(hand);
-            return InteractionResultHolder.consume(stack);
-        }
-        if (!world.isClientSide) {
-            ability.activate(world, player, stack);
-            StoneAbilityCooldowns.apply(player, stack, getKey(), ability);
-            return InteractionResultHolder.success(stack);
-        }
-        return InteractionResultHolder.pass(stack);
-    }
-
-    @Override
-    public void onUseTick(Level world, LivingEntity entity, ItemStack stack, int count) {
-        if (!(entity instanceof Player player)) return;
-        IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(getKey(), stack);
-        if (ability != null && ability.canHoldUse()) ability.onUsingTick(world, player, stack, count);
-    }
-
-    @Override
-    public void releaseUsing(ItemStack stack, Level world, LivingEntity entity, int timeLeft) {
-        if (!(entity instanceof Player player)) return;
-        IGStoneAbility ability = StoneAbilityRegistries.getSelectedAbility(getKey(), stack);
-        if (ability != null && ability.canHoldUse()) {
-            ability.releaseUsing(world, player, stack, timeLeft);
-            if (!world.isClientSide) StoneAbilityCooldowns.apply(player, stack, getKey(), ability);
-        }
-    }
-
     // ===== Passive: Totem-of-Undying save =================================================
     // When lethal damage would kill a player who has the Soul Stone (raw / holder / gauntlet),
-    // cancel death, apply classic totem-like buffs, and start a container-aware cooldown
-    // under ability key "passive_totem" (register its base cooldown in StoneAbilityCooldowns).
+    // cancel death, apply classic totem-like buffs, and spend passive_totem energy.
     @Mod.EventBusSubscriber(modid = "egm", bus = Mod.EventBusSubscriber.Bus.FORGE)
     public static class PassiveEvents {
 
@@ -89,8 +45,7 @@ public class SoulStoneItem extends StoneItem {
             ItemStack stoneStack = findSoulStoneStack(player);
             if (stoneStack.isEmpty()) return;
 
-            int left = StoneAbilityCooldowns.remaining(player, "soul", "passive_totem");
-            if (left > 0) return;
+            if (!StoneEnergyManager.consumeInstant(player, stoneStack, "soul", "passive_totem")) return;
 
             evt.setCanceled(true);
             player.setHealth(1.0F);
@@ -107,9 +62,6 @@ public class SoulStoneItem extends StoneItem {
                 server.sendParticles(ParticleTypes.TOTEM_OF_UNDYING, player.getX(), player.getY() + 1.0, player.getZ(), 32, 0.4, 0.6, 0.4, 0.02);
             }
 
-            // Apply container-aware cooldown + persistent gate; overlay to active container
-            var cdItem = StoneAbilityCooldowns.pickCooldownItem(player, stoneStack);
-            StoneAbilityCooldowns.apply(player, cdItem, "soul", "passive_totem");
         }
 
         private static ItemStack findSoulStoneStack(Player p) {
@@ -174,33 +126,23 @@ public class SoulStoneItem extends StoneItem {
         }
     }
 
-    // ===== Admin command hook: reset passive cooldown by player UUID ======================
-    public static void resetCooldown(UUID playerId) {
+    // ===== Admin command hook: refill Soul Stone resurrection energy ======================
+    public static void refillResurrectionEnergy(UUID playerId) {
         var server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return;
         var player = server.getPlayerList().getPlayer(playerId);
         if (player == null) return;
 
-        // Clear the per-player persistent gate for the passive
-        var pd = player.getPersistentData();
-        var root = pd.getCompound("egm_cd");              // must match StoneAbilityCooldowns' NBT root
-        String key = "soul:passive_totem";
-        if (root.contains(key)) {
-            root.remove(key);
-            pd.put("egm_cd", root);
-        }
-
-        // Clear/shorten any visible overlay on relevant containers so UI matches immediately
         var soulItem = ModItems.SOUL_STONE.get();
-        // raw stone overlay
-        player.getCooldowns().addCooldown(soulItem, 1);
-        // holder / gauntlet that currently contain the Soul Stone
         for (ItemStack inv : player.getInventory().items) {
             if (inv.isEmpty()) continue;
+            if (inv.getItem() == soulItem) {
+                StoneEnergyManager.refillEnergy(player, inv);
+            }
             if (inv.getItem() instanceof StoneHolderItem) {
                 ItemStack inside = StoneHolderItem.getStone(inv);
                 if (!inside.isEmpty() && inside.getItem() == soulItem) {
-                    player.getCooldowns().addCooldown(inv.getItem(), 1);
+                    StoneEnergyManager.refillEnergy(player, inv);
                 }
             } else if (inv.getItem() instanceof InfinityGauntletItem) {
                 boolean hasSoul = false;
@@ -209,7 +151,7 @@ public class SoulStoneItem extends StoneItem {
                     if (!s.isEmpty() && s.getItem() == soulItem) { hasSoul = true; break; }
                 }
                 if (hasSoul) {
-                    player.getCooldowns().addCooldown(inv.getItem(), 1);
+                    StoneEnergyManager.refillEnergy(player, inv);
                 }
             }
         }

@@ -4,7 +4,7 @@
 	"textures": {
 		"0": "egm:item/aether_assets/aether_texture",
 		"1": "egm:item/aether_assets/aether_effects",
-		"particle": "egm:item/aether_assets//aether_assets/aether_texture"
+		"particle": "egm:item/aether_assets/aether_texture"
 	},
 	"elements": [
 		{

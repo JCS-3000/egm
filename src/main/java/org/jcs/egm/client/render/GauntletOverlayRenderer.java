@@ -28,6 +28,10 @@ public class GauntletOverlayRenderer {
         cachedPresentStones = buildPresentStones(gauntlet);
     }
 
+    static boolean isSelectionVisible() {
+        return System.currentTimeMillis() - lastScrollTime <= 1500;
+    }
+
     // Builds a list of non-empty stone slots
     private static List<StoneEntry> buildPresentStones(ItemStack gauntlet) {
         List<StoneEntry> stones = new ArrayList<>();
@@ -45,8 +49,7 @@ public class GauntletOverlayRenderer {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.options.hideGui) return;
 
-        long elapsed = System.currentTimeMillis() - lastScrollTime;
-        if (elapsed > 1500) return;
+        if (!isSelectionVisible()) return;
 
         ItemStack stack = mc.player.getMainHandItem();
         if (!(stack.getItem() instanceof InfinityGauntletItem)) return;
@@ -81,6 +84,8 @@ public class GauntletOverlayRenderer {
 
         // Draw centered string, color with opaque alpha
         GuiGraphics graphics = event.getGuiGraphics();
+        EnergyBarRenderer.render(mc, graphics, stack, screenWidth, screenHeight);
+
         int textWidth = mc.font.width(displayText);
         graphics.drawString(
                 mc.font,

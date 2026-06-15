@@ -16,13 +16,15 @@ import org.jcs.egm.particles.ChargingParticleHelper;
 import org.jcs.egm.registry.ModEffects;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneAbilityCooldowns;
+import org.jcs.egm.stones.StoneAbilityCosts;
+import org.jcs.egm.stones.StoneAbilityStateCleanup;
+import org.jcs.egm.stones.StoneEnergyManager;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-public class EmpoweredPunchPowerStoneAbility implements IGStoneAbility {
+public class EmpoweredPunchPowerStoneAbility implements IGStoneAbility, StoneAbilityStateCleanup {
 
     @Override
     public String abilityKey() { return "empowered_punch"; }
@@ -31,6 +33,11 @@ public class EmpoweredPunchPowerStoneAbility implements IGStoneAbility {
     private static final SoundEvent POWER_PUNCH_SOUND = SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("egm", "power_punch"));
     
     private static final Set<UUID> CHARGING_SOUND_PLAYERS = new HashSet<>();
+
+    @Override
+    public void cleanup(UUID playerId) {
+        CHARGING_SOUND_PLAYERS.remove(playerId);
+    }
 
     @Override
     public void activate(Level level, Player player, ItemStack stack) {}
@@ -44,7 +51,7 @@ public class EmpoweredPunchPowerStoneAbility implements IGStoneAbility {
         final String ability = abilityKey();
         int useDuration = player.getUseItem().getUseDuration();
         int ticksHeld = useDuration - count;
-        int chargeTicks = StoneAbilityCooldowns.chargeup(stone, ability);
+        int chargeTicks = StoneAbilityCosts.chargeTicks(stone, ability);
         UUID uuid = player.getUUID();
 
         // CHARGING PHASE
@@ -93,8 +100,7 @@ public class EmpoweredPunchPowerStoneAbility implements IGStoneAbility {
                 level.playSound(null, player.blockPosition(), SoundEvents.EXPERIENCE_ORB_PICKUP, 
                         SoundSource.PLAYERS, 1.0F, 2.0F);
                 
-                // Apply cooldown
-                StoneAbilityCooldowns.apply(player, stack, "power", this);
+                StoneEnergyManager.consumeInstant(player, stack, "power", this);
             }
             
             // Force stop using the item (auto-release)

@@ -67,7 +67,7 @@ public class StoneHolderMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return true;
+        return player.getMainHandItem() == holderStack || player.getOffhandItem() == holderStack;
     }
 
     @Override

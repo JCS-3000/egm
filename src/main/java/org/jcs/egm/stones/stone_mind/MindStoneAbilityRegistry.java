@@ -1,6 +1,5 @@
 package org.jcs.egm.stones.stone_mind;
 
-import net.minecraft.network.chat.Component;
 import org.jcs.egm.stones.IGStoneAbility;
 
 import java.util.ArrayList;
@@ -17,13 +16,6 @@ public class MindStoneAbilityRegistry {
     }
 
     public static List<IGStoneAbility> getAbilities() { return ABILITIES; }
-
-    public static List<Component> getAbilityNames() {
-        List<Component> names = new ArrayList<>();
-        names.add(Component.literal("Disarm"));
-        names.add(Component.literal("Enrage"));
-        return names;
-    }
 
     public static IGStoneAbility getSelectedAbility(net.minecraft.world.item.ItemStack stack) {
         int idx = stack.getOrCreateTag().getInt("AbilityIndex");

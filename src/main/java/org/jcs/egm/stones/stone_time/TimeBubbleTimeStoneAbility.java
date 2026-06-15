@@ -16,11 +16,12 @@ import org.jcs.egm.network.NetworkHandler;
 import org.jcs.egm.registry.ModEntities;
 import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.IGStoneAbility;
-import org.jcs.egm.stones.StoneAbilityCooldowns;
+import org.jcs.egm.stones.StoneAbilityStateCleanup;
+import org.jcs.egm.stones.StoneEnergyManager;
 
 import java.util.*;
 
-public class TimeBubbleTimeStoneAbility implements IGStoneAbility {
+public class TimeBubbleTimeStoneAbility implements IGStoneAbility, StoneAbilityStateCleanup {
 
     @Override public String abilityKey() { return "bubble"; }
     @Override public boolean canHoldUse() { return true; }
@@ -35,15 +36,21 @@ public class TimeBubbleTimeStoneAbility implements IGStoneAbility {
     private static final int   FIREWORK_POINTS   = 420;
 
     private static final SoundEvent CHARGING_SOUND =
-            SoundEvent.createVariableRangeEvent(new ResourceLocation("egm", "time_stone_charging"));
+            SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("egm", "time_stone_charging"));
     private static final SoundEvent TWINKLE_SOUND =
-            SoundEvent.createVariableRangeEvent(new ResourceLocation("egm", "universal_twinkle"));
+            SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("egm", "universal_twinkle"));
 
     private static final int COLOR_A = 0x62FF2D;
     private static final int COLOR_B = 0x0AAA67;
 
     private static final Set<UUID> CHARGING_SOUND_PLAYERS = new HashSet<>();
     private static final Map<UUID, Integer> CHARGE = new HashMap<>();
+
+    @Override
+    public void cleanup(UUID playerId) {
+        CHARGE.remove(playerId);
+        CHARGING_SOUND_PLAYERS.remove(playerId);
+    }
 
     @Override
     public void onUsingTick(Level level, Player player, ItemStack stack, int count) {
@@ -99,7 +106,7 @@ public class TimeBubbleTimeStoneAbility implements IGStoneAbility {
     }
 
     private void fire(Level level, Player player, ItemStack stoneStack) {
-        if (StoneAbilityCooldowns.guardUse(player, stoneStack, "time", this)) return;
+        if (StoneEnergyManager.guardUse(player, stoneStack, "time", this)) return;
 
         level.playSound(null, player.blockPosition(), TWINKLE_SOUND, SoundSource.PLAYERS, 1.0F, 1.0F);
 
@@ -115,7 +122,7 @@ public class TimeBubbleTimeStoneAbility implements IGStoneAbility {
             sl.addFreshEntity(field);
         }
 
-        StoneAbilityCooldowns.apply(player, stoneStack, "time", this);
+        StoneEnergyManager.consumeInstant(player, stoneStack, "time", this);
     }
 
     // ===== visuals =====
