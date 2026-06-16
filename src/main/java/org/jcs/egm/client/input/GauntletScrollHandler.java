@@ -21,7 +21,7 @@ public class GauntletScrollHandler {
     @SubscribeEvent
     public static void onMouseScroll(InputEvent.MouseScrollingEvent event) {
         Player player = net.minecraft.client.Minecraft.getInstance().player;
-        if (player == null || !player.isShiftKeyDown()) return;
+        if (player == null || !InfinityKeybinds.GAUNTLET_SCROLL_MODIFIER.isDown()) return;
 
         ItemStack stack = player.getMainHandItem();
         if (!(stack.getItem() instanceof InfinityGauntletItem)) return;
@@ -33,6 +33,9 @@ public class GauntletScrollHandler {
             if (!s.isEmpty() && s.getItem() instanceof StoneItem) {
                 presentIndices.add(i);
             }
+        }
+        if (InfinityGauntletItem.hasAllStones(stack)) {
+            presentIndices.add(InfinityGauntletItem.SNAP_SELECTION);
         }
 
         // 2. If no stones, update overlay and do nothing else

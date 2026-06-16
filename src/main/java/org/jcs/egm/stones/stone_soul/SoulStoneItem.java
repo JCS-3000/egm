@@ -19,6 +19,7 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 import org.jcs.egm.gauntlet.InfinityGauntletItem;
 import org.jcs.egm.holders.StoneHolderItem;
 import org.jcs.egm.registry.ModItems;
+import org.jcs.egm.stones.StoneContainer;
 import org.jcs.egm.stones.StoneEnergyManager;
 import org.jcs.egm.stones.StoneItem;
 
@@ -65,22 +66,17 @@ public class SoulStoneItem extends StoneItem {
         }
 
         private static ItemStack findSoulStoneStack(Player p) {
-            // raw
-            for (ItemStack s : p.getInventory().items) {
-                if (s.getItem() == ModItems.SOUL_STONE.get()) return s;
-            }
-            // holder
-            for (ItemStack inv : p.getInventory().items) {
-                if (inv.getItem() instanceof StoneHolderItem) {
-                    ItemStack inside = StoneHolderItem.getStone(inv);
-                    if (!inside.isEmpty() && inside.getItem() == ModItems.SOUL_STONE.get()) return inside;
-                }
-            }
-            // gauntlet
-            for (ItemStack inv : p.getInventory().items) {
+            for (int i = 0; i < p.getInventory().items.size(); i++) {
+                if (i == p.getInventory().selected) continue;
+                ItemStack inv = p.getInventory().items.get(i);
+                if (inv.getItem() == ModItems.SOUL_STONE.get()) return inv;
+
+                ItemStack single = StoneContainer.getSingleContainedStone(inv);
+                if (!single.isEmpty() && single.getItem() == ModItems.SOUL_STONE.get()) return single;
+
                 if (inv.getItem() instanceof InfinityGauntletItem) {
-                    for (int i = 0; i < 6; i++) {
-                        ItemStack s = InfinityGauntletItem.getStoneStack(inv, i);
+                    for (int slot = 0; slot < 6; slot++) {
+                        ItemStack s = InfinityGauntletItem.getStoneStack(inv, slot);
                         if (!s.isEmpty() && s.getItem() == ModItems.SOUL_STONE.get()) return s;
                     }
                 }

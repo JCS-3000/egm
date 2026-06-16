@@ -62,7 +62,13 @@ public class StoneHolderMenu extends AbstractContainerMenu {
     private void saveToStack() {
         if (!holderStack.hasTag()) holderStack.setTag(new net.minecraft.nbt.CompoundTag());
         holderStack.getTag().put("Stone", itemHandler.serializeNBT());
-        StoneHolderItem.updateStoneBitmaskNBT(holderStack); // sync predicate NBT
+        if (holderStack.getItem() instanceof StoneHolderItem) {
+            StoneHolderItem.updateStoneBitmaskNBT(holderStack);
+        } else if (holderStack.getItem() instanceof KreeWarhammerItem) {
+            KreeWarhammerItem.updateStoneBitmaskNBT(holderStack);
+        } else if (holderStack.getItem() instanceof LokianScepterItem) {
+            LokianScepterItem.updateStoneBitmaskNBT(holderStack);
+        }
     }
 
     @Override
@@ -111,8 +117,10 @@ public class StoneHolderMenu extends AbstractContainerMenu {
         }
         @Override
         public boolean mayPlace(ItemStack stack) {
-            if (!(holderStack.getItem() instanceof StoneHolderItem holderItem)) return false;
-            return holderItem.isCorrectStone(stack);
+            if (holderStack.getItem() instanceof StoneHolderItem holderItem) return holderItem.isCorrectStone(stack);
+            if (holderStack.getItem() instanceof KreeWarhammerItem holderItem) return holderItem.isCorrectStone(stack);
+            if (holderStack.getItem() instanceof LokianScepterItem holderItem) return holderItem.isCorrectStone(stack);
+            return false;
         }
     }
     private static class DummySlot extends Slot {

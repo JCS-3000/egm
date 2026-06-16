@@ -8,11 +8,13 @@ import java.util.List;
 public class MindStoneAbilityRegistry {
     public static final IGStoneAbility DROP_HELD_ITEM = new DisarmMindStoneAbility();
     public static final IGStoneAbility ENRAGE   = new EnrageMindStoneAbility();
+    public static final IGStoneAbility PHASE_WALK = new PhaseWalkMindStoneAbility();
 
     private static final List<IGStoneAbility> ABILITIES = new ArrayList<>();
     static {
         ABILITIES.add(DROP_HELD_ITEM);
         ABILITIES.add(ENRAGE);
+        ABILITIES.add(PHASE_WALK);
     }
 
     public static List<IGStoneAbility> getAbilities() { return ABILITIES; }

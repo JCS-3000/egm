@@ -4,6 +4,10 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -16,6 +20,7 @@ import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.items.ItemStackHandler;
 import org.jcs.egm.registry.ModItems;
+import org.jcs.egm.registry.ModParticles;
 import org.jcs.egm.stones.StoneAbilityContext;
 import org.jcs.egm.stones.StoneAbilityUse;
 import org.jcs.egm.stones.StoneEnergyManager;
@@ -24,9 +29,12 @@ import org.jetbrains.annotations.NotNull;
 import java.util.UUID;
 
 public class InfinityGauntletItem extends Item {
+    public static final int SNAP_SELECTION = 6;
 
     private static final UUID ATTACK_DAMAGE_MODIFIER = UUID.fromString("c460a0f0-5bf3-4bc1-924a-6e1cfacb17f7");
     private static final UUID ATTACK_SPEED_MODIFIER = UUID.fromString("99c47397-8eeb-428e-b5db-75a3976d83e3");
+    private static final SoundEvent SNAP_SOUND = SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("egm", "snap"));
+    private static final SoundEvent DUSTED_SOUND = SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("egm", "dusted"));
 
     public InfinityGauntletItem(Properties properties) {
         super(properties);
@@ -46,6 +54,11 @@ public class InfinityGauntletItem extends Item {
     @Override
     public @NotNull InteractionResultHolder<ItemStack> use(@NotNull Level level, Player player, @NotNull InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
+        if (getSelectedStone(stack) == SNAP_SELECTION) {
+            if (!hasAllStones(stack)) return InteractionResultHolder.pass(stack);
+            if (!level.isClientSide) performSnap((ServerLevel) level, player, stack);
+            return InteractionResultHolder.success(stack);
+        }
         int idx = getSelectedStone(stack);
         String stoneKey = getSelectedStoneName(stack);
         ItemStackHandler handler = new ItemStackHandler(6);
@@ -163,6 +176,7 @@ public class InfinityGauntletItem extends Item {
             case 3 -> "reality";
             case 4 -> "soul";
             case 5 -> "mind";
+            case SNAP_SELECTION -> "snap";
             default -> "none";
         };
     }
@@ -199,5 +213,31 @@ public class InfinityGauntletItem extends Item {
     public static void updateStonesBitmaskNBT(ItemStack stack) {
         int bitmask = getStonesBitmask(stack);
         stack.getOrCreateTag().putInt("StoneBitmask", bitmask);
+    }
+
+    private static void performSnap(ServerLevel level, Player player, ItemStack stack) {
+        if (stack.getOrCreateTag().getLong("LastSnapTick") + 20 * 30 > level.getGameTime()) return;
+        if (!StoneEnergyManager.consumeInstant(player, stack, "gauntlet", "snap")) return;
+        stack.getTag().putLong("LastSnapTick", level.getGameTime());
+
+        level.playSound(null, player.blockPosition(), SNAP_SOUND, SoundSource.PLAYERS, 1.0F, 1.0F);
+        level.sendParticles(ModParticles.UNIVERSAL_PARTICLE_FOUR.get(),
+                player.getX(), player.getY() + 1.0D, player.getZ(),
+                240, 1.0D, 1.0D, 1.0D, 0.08D);
+
+        level.getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(32.0D),
+                        entity -> entity.isAlive() && entity != player)
+                .stream()
+                .filter(entity -> level.random.nextBoolean())
+                .forEach(entity -> {
+                    level.sendParticles(ModParticles.UNIVERSAL_PARTICLE_FOUR.get(),
+                            entity.getX(), entity.getY() + entity.getBbHeight() * 0.5D, entity.getZ(),
+                            80, 0.4D, 0.6D, 0.4D, 0.05D);
+                    level.playSound(null, entity.blockPosition(), DUSTED_SOUND, SoundSource.PLAYERS, 0.6F, 1.0F);
+                    entity.hurt(level.damageSources().magic(), Float.MAX_VALUE);
+                    if (entity.isAlive()) entity.kill();
+                });
+
+        player.hurt(level.damageSources().magic(), 10.0F);
     }
 }

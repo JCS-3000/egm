@@ -7,8 +7,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.network.NetworkEvent;
 import org.jcs.egm.gauntlet.InfinityGauntletItem;
-import org.jcs.egm.holders.StoneHolderItem;
 import org.jcs.egm.stones.StoneAbilityRegistries;
+import org.jcs.egm.stones.StoneContainer;
 import org.jcs.egm.stones.StoneItem;
 
 import java.util.function.Supplier;
@@ -42,13 +42,14 @@ public class SetAbilityIndexPacket {
             if (player == null) return;
             ItemStack stack = player.getItemInHand(hand);
             if (!stack.isEmpty()) {
-                // For Stone Holder
-                if (stack.getItem() instanceof StoneHolderItem holder) {
-                    if (!StoneAbilityRegistries.isValidAbilityIndex(holder.getStoneKey(), index)) return;
-                    ItemStack inside = StoneHolderItem.getStone(stack);
+                // For single-stone holders
+                if (StoneContainer.isHolderLike(stack)) {
+                    String stoneKey = StoneContainer.getSingleStoneKey(stack);
+                    if (!StoneAbilityRegistries.isValidAbilityIndex(stoneKey, index)) return;
+                    ItemStack inside = StoneContainer.getSingleContainedStone(stack);
                     if (!inside.isEmpty()) {
                         inside.getOrCreateTag().putInt("AbilityIndex", index);
-                        StoneHolderItem.setStone(stack, inside);
+                        StoneContainer.setSingleContainedStone(stack, inside);
                     }
                 }
                 // For Gauntlet

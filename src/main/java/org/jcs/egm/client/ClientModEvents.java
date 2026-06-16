@@ -11,7 +11,6 @@ import org.jcs.egm.client.input.InfinityKeybinds;
 import org.jcs.egm.client.particle.UniversalTintParticle;
 import org.jcs.egm.egm;
 import org.jcs.egm.gauntlet.InfinityGauntletItem;
-import org.jcs.egm.holders.StoneHolderItem;
 import org.jcs.egm.network.NetworkHandler;
 import org.jcs.egm.network.OpenGauntletMenuPacket;
 import org.jcs.egm.network.OpenStoneHolderMenuPacket;
@@ -19,6 +18,7 @@ import org.jcs.egm.registry.ModItems;
 import org.jcs.egm.stones.StoneItem;
 import org.jcs.egm.registry.ModEffects;
 import org.jcs.egm.stones.StoneAbilityRegistries;
+import org.jcs.egm.stones.StoneContainer;
 import org.jcs.egm.stones.stone_power.EmpoweredPunchPowerStoneAbility;
 
 @Mod.EventBusSubscriber(modid = "egm", bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
@@ -47,7 +47,7 @@ public class ClientModEvents {
                     if (!mainHand.isEmpty()) {
                         if (mainHand.getItem() == ModItems.INFINITY_GAUNTLET.get()) {
                             NetworkHandler.INSTANCE.sendToServer(new OpenGauntletMenuPacket());
-                        } else if (mainHand.getItem() instanceof StoneHolderItem) {
+                        } else if (StoneContainer.isHolderLike(mainHand)) {
                             NetworkHandler.INSTANCE.sendToServer(new OpenStoneHolderMenuPacket());
                         }
                     }
@@ -60,21 +60,35 @@ public class ClientModEvents {
                 ItemStack stack = mc.player.getMainHandItem();
                 if (stack.getItem() instanceof StoneItem stoneItem) {
                     openStoneAbilityMenu(stack, InteractionHand.MAIN_HAND, stoneItem.getKey());
-                } else if (stack.getItem() instanceof StoneHolderItem holder) {
-                    openStoneAbilityMenu(stack, InteractionHand.MAIN_HAND, holder.getStoneKey());
+                } else if (StoneContainer.isHolderLike(stack)) {
+                    openHolderAbilityMenu(stack, StoneContainer.getSingleStoneKey(stack));
                 } else if (stack.getItem() instanceof InfinityGauntletItem) {
+                    if (InfinityGauntletItem.getSelectedStone(stack) == InfinityGauntletItem.SNAP_SELECTION) return;
+                    ItemStack selectedStone = InfinityGauntletItem.getStoneStack(stack, InfinityGauntletItem.getSelectedStone(stack));
+                    if (selectedStone.isEmpty()) return;
                     String stoneKey = InfinityGauntletItem.getSelectedStoneName(stack);
-                    openStoneAbilityMenu(stack, InteractionHand.MAIN_HAND, stoneKey);
+                    openStoneAbilityMenu(stack, selectedStone, InteractionHand.MAIN_HAND, stoneKey);
                 }
             }
         }
     }
 
+    private static void openHolderAbilityMenu(ItemStack holderStack, String stoneKey) {
+        ItemStack contained = StoneContainer.getSingleContainedStone(holderStack);
+        if (contained.isEmpty()) return;
+        openStoneAbilityMenu(holderStack, contained, InteractionHand.MAIN_HAND, stoneKey);
+    }
+
     private static void openStoneAbilityMenu(ItemStack stack, InteractionHand hand, String stoneKey) {
+        openStoneAbilityMenu(stack, stack, hand, stoneKey);
+    }
+
+    private static void openStoneAbilityMenu(ItemStack stack, ItemStack selectedAbilityStack, InteractionHand hand, String stoneKey) {
         Minecraft mc = Minecraft.getInstance();
         var names = StoneAbilityRegistries.getAbilityNames(stoneKey);
         if (names.isEmpty()) return;
-        int idx = stack.hasTag() ? stack.getTag().getInt("AbilityIndex") : 0;
+        int idx = selectedAbilityStack.hasTag() ? selectedAbilityStack.getTag().getInt("AbilityIndex") : 0;
+        if (!StoneAbilityRegistries.isValidAbilityIndex(stoneKey, idx)) idx = 0;
         mc.setScreen(new StoneAbilityMenuScreen(stack, hand, names, idx));
     }
 }

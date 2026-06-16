@@ -8,10 +8,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
-import org.jcs.egm.holders.StoneHolderItem;
 import org.jcs.egm.gauntlet.InfinityGauntletItem;
 import org.jcs.egm.network.NetworkHandler;
 import org.jcs.egm.network.SetAbilityIndexPacket;
+import org.jcs.egm.stones.StoneContainer;
 import org.lwjgl.glfw.GLFW;
 import net.minecraftforge.items.ItemStackHandler;
 
@@ -27,6 +27,7 @@ public class StoneAbilityMenuScreen extends Screen {
     private final InteractionHand hand;
     private final List<Component> abilityNames;
     private int selectedIndex;
+    private int hoverIndex;
     private final int menuWidth = 176;
     private final int menuHeight = 107;
     private int guiLeft;
@@ -41,7 +42,8 @@ public class StoneAbilityMenuScreen extends Screen {
         this.stoneStack = stoneStack;
         this.hand = hand;
         this.abilityNames = abilityNames;
-        this.selectedIndex = selectedIndex;
+        this.selectedIndex = normalizeIndex(selectedIndex);
+        this.hoverIndex = this.selectedIndex;
     }
 
     @Override
@@ -75,8 +77,7 @@ public class StoneAbilityMenuScreen extends Screen {
             int row = i - firstIdx;
             int y = startY + row * entryHeight;
 
-            // Draw arrow for selected
-            if (i == selectedIndex) {
+            if (i == hoverIndex) {
                 RenderSystem.setShaderTexture(0, ARROW_TEX);
                 graphics.blit(ARROW_TEX,
                         this.width / 2 - 55, // X position
@@ -86,21 +87,22 @@ public class StoneAbilityMenuScreen extends Screen {
                         12, 12);
             }
 
-            graphics.drawCenteredString(this.font, abilityNames.get(i), this.width / 2, y, 0xCCCCCC);
+            int color = i == selectedIndex ? 0xFFE6A3 : i == hoverIndex ? 0xFFFFFF : 0xCCCCCC;
+            graphics.drawCenteredString(this.font, abilityNames.get(i), this.width / 2, y, color);
         }
 
         super.render(graphics, mouseX, mouseY, partialTicks);
     }
 
     private void updateScrollOffset() {
-        // Ensure selected is visible if there are more than 4 abilities
+        // Ensure hovered entry is visible if there are more than 4 abilities
         if (abilityNames.size() <= VISIBLE_ENTRIES) {
             scrollOffset = 0;
         } else {
-            if (selectedIndex < scrollOffset) {
-                scrollOffset = selectedIndex;
-            } else if (selectedIndex >= scrollOffset + VISIBLE_ENTRIES) {
-                scrollOffset = selectedIndex - VISIBLE_ENTRIES + 1;
+            if (hoverIndex < scrollOffset) {
+                scrollOffset = hoverIndex;
+            } else if (hoverIndex >= scrollOffset + VISIBLE_ENTRIES) {
+                scrollOffset = hoverIndex - VISIBLE_ENTRIES + 1;
             }
         }
     }
@@ -110,11 +112,10 @@ public class StoneAbilityMenuScreen extends Screen {
         int size = abilityNames.size();
         if (size > 0) {
             if (delta < 0) {
-                selectedIndex = (selectedIndex + 1) % size;
+                hoverIndex = (hoverIndex + 1) % size;
             } else if (delta > 0) {
-                selectedIndex = (selectedIndex - 1 + size) % size;
+                hoverIndex = (hoverIndex - 1 + size) % size;
             }
-            saveSelection();
             updateScrollOffset();
             return true;
         }
@@ -124,7 +125,7 @@ public class StoneAbilityMenuScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) { // Left click
-            this.onClose();
+            commitHoveredSelection();
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -138,16 +139,20 @@ public class StoneAbilityMenuScreen extends Screen {
         }
         if (keyCode == GLFW.GLFW_KEY_DOWN) {
             int size = abilityNames.size();
-            selectedIndex = (selectedIndex + 1) % size;
-            saveSelection();
+            if (size == 0) return true;
+            hoverIndex = (hoverIndex + 1) % size;
             updateScrollOffset();
             return true;
         }
         if (keyCode == GLFW.GLFW_KEY_UP) {
             int size = abilityNames.size();
-            selectedIndex = (selectedIndex - 1 + size) % size;
-            saveSelection();
+            if (size == 0) return true;
+            hoverIndex = (hoverIndex - 1 + size) % size;
             updateScrollOffset();
+            return true;
+        }
+        if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER || keyCode == GLFW.GLFW_KEY_SPACE) {
+            commitHoveredSelection();
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
@@ -155,20 +160,24 @@ public class StoneAbilityMenuScreen extends Screen {
 
     @Override
     public void onClose() {
+        super.onClose();
+    }
+
+    private void commitHoveredSelection() {
+        selectedIndex = hoverIndex;
         saveSelection();
         if (Minecraft.getInstance().player != null && Minecraft.getInstance().player.connection != null) {
             NetworkHandler.INSTANCE.sendToServer(new SetAbilityIndexPacket(selectedIndex, hand));
         }
-        super.onClose();
     }
 
     private void saveSelection() {
         // Always try to set the AbilityIndex on the *stone* inside the holder or gauntlet
-        if (stoneStack.getItem() instanceof StoneHolderItem) {
-            ItemStack inside = StoneHolderItem.getStone(stoneStack);
+        if (StoneContainer.isHolderLike(stoneStack)) {
+            ItemStack inside = StoneContainer.getSingleContainedStone(stoneStack);
             if (!inside.isEmpty()) {
                 inside.getOrCreateTag().putInt("AbilityIndex", selectedIndex);
-                StoneHolderItem.setStone(stoneStack, inside);
+                StoneContainer.setSingleContainedStone(stoneStack, inside);
             }
         } else if (stoneStack.getItem() instanceof InfinityGauntletItem) {
             int idx = InfinityGauntletItem.getSelectedStone(stoneStack);
@@ -188,6 +197,10 @@ public class StoneAbilityMenuScreen extends Screen {
                 stoneStack.getOrCreateTag().putInt("AbilityIndex", selectedIndex);
             }
         }
+    }
+
+    private int normalizeIndex(int index) {
+        return abilityNames.isEmpty() || index < 0 || index >= abilityNames.size() ? 0 : index;
     }
 
     @Override

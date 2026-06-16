@@ -9,11 +9,13 @@ public class RealityStoneAbilityRegistry {
     // Register all abilities for the reality stone
     public static final IGStoneAbility WILLED_CHAOS = new WilledChaosRealityStoneAbility();
     public static final IGStoneAbility METAMORPHOSIS = new MetamorphosisRealityStoneAbility();
+    public static final IGStoneAbility TITANS_PARADISE = new TitansParadiseRealityStoneAbility();
 
     private static final List<IGStoneAbility> ABILITIES = new ArrayList<>();
     static {
         ABILITIES.add(WILLED_CHAOS);
         ABILITIES.add(METAMORPHOSIS);
+        ABILITIES.add(TITANS_PARADISE);
     }
 
     public static List<IGStoneAbility> getAbilities() {

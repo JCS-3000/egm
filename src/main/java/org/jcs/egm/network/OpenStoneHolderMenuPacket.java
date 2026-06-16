@@ -5,8 +5,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkHooks;
-import org.jcs.egm.holders.StoneHolderItem;
 import org.jcs.egm.holders.StoneHolderMenu;
+import org.jcs.egm.stones.StoneContainer;
 
 import java.util.function.Supplier;
 
@@ -26,8 +26,7 @@ public class OpenStoneHolderMenuPacket {
             if (player == null) return;
 
             ItemStack mainHand = player.getMainHandItem();
-            // Replace StoneHolderItem with your actual holder class
-            if (!mainHand.isEmpty() && mainHand.getItem() instanceof StoneHolderItem) {
+            if (StoneContainer.isHolderLike(mainHand)) {
                 NetworkHooks.openScreen(
                         player,
                         new StoneHolderMenu.Provider(mainHand),

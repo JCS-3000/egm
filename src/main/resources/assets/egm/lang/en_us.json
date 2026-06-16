@@ -22,6 +22,10 @@
   "jei.egm.anvil_crafting": "Anvil Crafting",
   "effect.egm.empowered_punch": "Empowered Punch",
   "death.attack.infinity_stone": "%1$s decided to emulate Tony Stark",
+  "key.categories.egm": "End Game Mod",
+  "key.egm.open_stone_menu": "Open Stone Menu",
+  "key.egm.open_ability_menu": "Open Stone Ability Menu",
+  "key.egm.gauntlet_scroll_modifier": "Gauntlet Stone Cycle Modifier",
 
   "itemGroup.egm.egm_tab": "End Game Mod"
 

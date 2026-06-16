@@ -8,11 +8,13 @@ import java.util.List;
 public class SoulStoneAbilityRegistry {
     public static final IGStoneAbility SOUL_BANISH = new SoulBanishSoulStoneAbility();
     public static final IGStoneAbility LIFE_DRAIN = new LifeDrainSoulStoneAbility();
+    public static final IGStoneAbility SOUL_SWARM = new SoulSwarmSoulStoneAbility();
 
     private static final List<IGStoneAbility> ABILITIES = new ArrayList<>();
     static {
         ABILITIES.add(SOUL_BANISH);
         ABILITIES.add(LIFE_DRAIN);
+        ABILITIES.add(SOUL_SWARM);
     }
 
     public static List<IGStoneAbility> getAbilities() {

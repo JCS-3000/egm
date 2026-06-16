@@ -41,6 +41,9 @@ public class GauntletOverlayRenderer {
                 stones.add(new StoneEntry(i, s));
             }
         }
+        if (InfinityGauntletItem.hasAllStones(gauntlet)) {
+            stones.add(new StoneEntry(InfinityGauntletItem.SNAP_SELECTION, ItemStack.EMPTY));
+        }
         return stones;
     }
 
@@ -77,9 +80,13 @@ public class GauntletOverlayRenderer {
                     .findFirst()
                     .orElse(cachedPresentStones.get(0));
 
-            // Use the display name and color of the stone item
-            displayText = match.stack.getHoverName().getString();
-            color = ((StoneItem) match.stack.getItem()).getColor();
+            if (match.slot == InfinityGauntletItem.SNAP_SELECTION) {
+                displayText = "SNAP";
+                color = 0xFFFFFF;
+            } else {
+                displayText = match.stack.getHoverName().getString();
+                color = ((StoneItem) match.stack.getItem()).getColor();
+            }
         }
 
         // Draw centered string, color with opaque alpha

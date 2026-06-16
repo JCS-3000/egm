@@ -27,9 +27,10 @@ public class GauntletSelectedStonePacket {
         ctx.get().enqueueWork(() -> {
             Player player = ctx.get().getSender();
             if (player != null) {
-                if (selected < 0 || selected >= 6) return;
                 ItemStack stack = player.getMainHandItem();
                 if (stack.getItem() instanceof InfinityGauntletItem) {
+                    if (selected < 0 || selected >= 6 && selected != InfinityGauntletItem.SNAP_SELECTION) return;
+                    if (selected == InfinityGauntletItem.SNAP_SELECTION && !InfinityGauntletItem.hasAllStones(stack)) return;
                     InfinityGauntletItem.setSelectedStone(stack, selected);
                 }
             }
